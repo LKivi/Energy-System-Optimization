@@ -1,0 +1,10 @@
+Runtime 0.0
+ObjectiveValue 32630.6416205691
+ModelStatus 2
+NodeCount 0.0
+MIPGap 0.0001
+
+ObjectiveFunction co2_gross
+BoundedFunction tac
+EpsilonConstraint 8470.080399080569
+
