@@ -83,6 +83,15 @@ def load_params():
     
     param.update(param_pipe)
     
+    
+    #%% TEMPERATURES
+    param_temperatures = {"heating_supply": 105,     # °C,   heating supply temperature
+                          "heating_return": 70,      # °C,   heating return temperature
+                          "cooling_supply": 6,       # °C,   cooling supply temperature
+                          "cooling_return": 12}     # °C,   cooling return temperature
+    
+    param.update(param_temperatures)
+    
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     devs = {}
 
