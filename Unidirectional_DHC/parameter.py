@@ -79,16 +79,19 @@ def load_params():
     
     
     #%% PIPE PARAMETERS
-    param_pipe = {"grid_depth": 1}                   # m,        installation depth beneath surface
+    param_pipe = {"grid_depth": 1,                  # m,       installation depth beneath surface
+                  "t_pipe": 0.01,                   # m,        pipe wall thickness
+                  "lambda_ins": 0.025,              # W/(m*K),  insulation heat conductivity
+                  "t_ins": 0.1}                     # m,         insulation layer thickness
     
     param.update(param_pipe)
     
     
     #%% TEMPERATURES
-    param_temperatures = {"heating_supply": 105,     # °C,   heating supply temperature
-                          "heating_return": 70,      # °C,   heating return temperature
-                          "cooling_supply": 6,       # °C,   cooling supply temperature
-                          "cooling_return": 12}     # °C,   cooling return temperature
+    param_temperatures = {"T_heating_supply": 105,     # °C,   heating supply temperature
+                          "T_heating_return": 70,      # °C,   heating return temperature
+                          "T_cooling_supply": 6,       # °C,   cooling supply temperature
+                          "T_cooling_return": 12}      # °C,   cooling return temperature
     
     param.update(param_temperatures)
     

@@ -9,8 +9,42 @@ import numpy as np
 from scipy.optimize import leastsq
 import cmath
 import pylab as plt
+import json
 
 import parameter
+from grid import generateJson
+
+
+#%%
+# Calculate thermal losses
+def calculateLosses():
+    
+    _, param, _ = parameter.load_params()
+    generateJson()
+    data = json.loads(open("nodes.json").read())
+    
+    T_soil = calculateSoilTemperature()
+    
+    Losses = {}
+    Losses["heating_grid"] = np.zeros(8760)
+    Losses["cooling_grid"] = np.zeros(8760)
+    
+    for item in data["edges"]:
+        d = item["diameter"]
+        L = item["distance"]      
+        k = (d/2 * 1/param["lambda_ins"] * np.log((d+2*param["t_pipe"]+2*param["t_ins"])/(d+2*param["t_pipe"])))**0.5         # W/(m^2*K)   heat transfer coefficient 
+        
+        Losses["heating_grid"] = Losses["heating_grid"] + k*np.pi*d*L*((param["T_heating_supply"] - T_soil) + (param["T_heating_return"] - T_soil))/1e6
+        Losses["cooling_grid"] = Losses["cooling_grid"] + k*np.pi*d*L*((T_soil - param["T_cooling_supply"]) + (T_soil - param["T_cooling_return"]))/1e6
+    
+    print(Losses["heating_grid"])
+    print(Losses["cooling_grid"])
+    
+    plt.plot(np.arange(8760)/24, Losses["cooling_grid"])
+    plt.show
+    
+    return Losses
+    
 
 
 #%%
@@ -122,8 +156,8 @@ def calculateSoilTemperature():
             weather["T_soil"] = Ts_mean - Ts_amp*np.exp(-t/delta_s)*np.cos(omega*time - Ts_phase - t/delta_s)
    
  
-    plt.plot(time/24, weather["T_soil"])
-    plt.show()
+    #plt.plot(time/24, weather["T_soil"])
+    #plt.show()
     
     T_soil = weather["T_soil"]
     
@@ -154,8 +188,9 @@ def cosFit(data):
 
 
 #%%
-T_soil = calculateSoilTemperature()
 
+
+calculateLosses()
 
 
 
