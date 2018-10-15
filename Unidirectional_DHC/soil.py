@@ -20,7 +20,7 @@ import grid
 def calculateLosses():
     
     _, param, _ = parameter.load_params()
-    grid.generateJson()
+    grid.generateJson()   
     grid.plotGrid()
     data = json.loads(open("nodes.json").read())
     
