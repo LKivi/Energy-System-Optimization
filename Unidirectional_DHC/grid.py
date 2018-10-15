@@ -6,9 +6,9 @@ Created on Sun Oct 14 15:48:51 2018
 """
 
 import numpy as np
-import uesgraphs as ug
-from shapely.geometry import Point
 import json
+import pylab as plt
+from shapely.geometry import Point
 
 
 def generateJson():
@@ -51,8 +51,8 @@ def generateJson():
     for i in range(np.size(edges["node_0"])):
         distance = ((nodes["x"][edges["node_1"][i]] - nodes["x"][edges["node_0"][i]])**2 + (nodes["y"][edges["node_1"][i]] - nodes["y"][edges["node_0"][i]])**2)**0.5
         edges_list.append({"name": str(edges["node_0"][i]) + "-" + str(edges["node_1"][i]),
-                           "node_0": str(edges["node_0"][i]),
-                           "node_1": str(edges["node_1"][i]),
+                           "node_0": int(edges["node_0"][i]),
+                           "node_1": int(edges["node_1"][i]),
                            "distance": distance,
                            "diameter": 0.5})
     
@@ -65,27 +65,29 @@ def generateJson():
     data_dict = json.loads(open("nodes.json").read())
        
     
+def plotGrid():
+     
+    data = json.loads(open("nodes.json").read())
  
+    for item in data["nodes"]:
+        if item["type"] == "supply":
+            r = 8
+            color = 'r'
+            width = 1
+        if item["type"] == "node":
+            r = 3
+            color = 'g'
+            width = 0.5
+        phi = np.arange(50)*2*np.pi/50
+        x = r*np.cos(phi) + item["x"]
+        y = r*np.sin(phi) + item["y"]
+        plt.plot(x,y,'k', linewidth = width, zorder = 1)
+        plt.fill(x,y,color, zorder = 10)
     
-def generateGraph(nodes, edges):
+    for item in data["edges"]:
+        plt.plot([data["nodes"][item["node_0"]]["x"],data["nodes"][item["node_1"]]["x"]],[data["nodes"][item["node_0"]]["y"],data["nodes"][item["node_1"]]["y"]], 'r', zorder = 5)
     
-    graph = ug.UESGraph()
-    
-    test = []
-    
-    test[0] = graph.add_building(
-    name='Supply',
-    position=Point(0, 10),
-    is_supply_heating=True)
-    
-    test[1] = graph.add_network_node(
-    network_type='heating',
-    position=Point(30, 5))
-       
-    graph.add_edge(test[0], test[1])
-    
-    vis = ug.Visuals(graph)
-    vis.show_network(show_plot=True)
+    plt.grid(zorder = 0)
+    plt.show()
 
-  
-        
+

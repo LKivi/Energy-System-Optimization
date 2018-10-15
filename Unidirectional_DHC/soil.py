@@ -12,7 +12,7 @@ import pylab as plt
 import json
 
 import parameter
-from grid import generateJson
+import grid 
 
 
 #%%
@@ -20,7 +20,8 @@ from grid import generateJson
 def calculateLosses():
     
     _, param, _ = parameter.load_params()
-    generateJson()
+    grid.generateJson()
+    grid.plotGrid()
     data = json.loads(open("nodes.json").read())
     
     T_soil = calculateSoilTemperature()
@@ -40,8 +41,8 @@ def calculateLosses():
     print(Losses["heating_grid"])
     print(Losses["cooling_grid"])
     
-    plt.plot(np.arange(8760)/24, Losses["cooling_grid"])
-    plt.show
+    #plt.plot(np.arange(8760)/24, Losses["cooling_grid"])
+    #plt.show
     
     return Losses
     
