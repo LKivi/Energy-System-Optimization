@@ -6,18 +6,13 @@ Created on Wed Oct 10 22:46:17 2018
 """
 import cmath
 import numpy as np
+import grid
 
-dic = {"a": 5,
-       "b": 1}
+data = grid.generateJson()
 
-dic2 = {"c":2}
+buildings = {}
 
-
-dic.update(dic2)
-
-print(dic)
-
-a = 1+5j
-b = 3+4j
-
-print()
+for item in data["edges"]:
+    buildings[item["name"]] = grid.listBuildings(data, item)
+    
+print(buildings)

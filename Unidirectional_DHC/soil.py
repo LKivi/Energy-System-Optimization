@@ -32,7 +32,7 @@ def calculateLosses():
     
     for item in data["edges"]:
         d = item["diameter"]
-        L = item["distance"]      
+        L = item["length"]      
         k = (d/2 * 1/param["lambda_ins"] * np.log((d+2*param["t_pipe"]+2*param["t_ins"])/(d+2*param["t_pipe"])))**0.5         # W/(m^2*K)   heat transfer coefficient 
         
         Losses["heating_grid"] = Losses["heating_grid"] + k*np.pi*d*L*((param["T_heating_supply"] - T_soil) + (param["T_heating_return"] - T_soil))/1e6

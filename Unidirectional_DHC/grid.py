@@ -55,11 +55,11 @@ def generateJson():
         index_0 = np.where(nodes["name"] == edges["node_0"][i])[0][0]
         index_1 = np.where(nodes["name"] == edges["node_1"][i])[0][0]
         
-        distance = ((nodes["x"][index_1] - nodes["x"][index_0])**2 + (nodes["y"][index_1] - nodes["y"][index_0])**2)**0.5
+        length = ((nodes["x"][index_1] - nodes["x"][index_0])**2 + (nodes["y"][index_1] - nodes["y"][index_0])**2)**0.5
         edges_list.append({"name": edges["node_0"][i] + "-" + edges["node_1"][i],
                            "node_0": edges["node_0"][i],
                            "node_1": edges["node_1"][i],
-                           "distance": distance,
+                           "length": length,
                            "diameter": 0.5})
     
     data_dict = {"nodes": nodes_list,
@@ -67,9 +67,11 @@ def generateJson():
         
     
     with open("nodes.json", "w") as f: json.dump(data_dict, f, indent=4, sort_keys=True)
-   
     
+    return data_dict
     
+ 
+#%%    
 def plotGrid():
      
     data = json.loads(open("nodes.json").read())
@@ -100,8 +102,8 @@ def plotGrid():
     
     for item in data["edges"]:
        
-        x_0, y_0 = findXY(item["node_0"])
-        x_1, y_1 = findXY(item["node_1"])
+        x_0, y_0 = findXY(data,item["node_0"])
+        x_1, y_1 = findXY(data,item["node_1"])
         #print(x_0, x_1, y_0, y_1)
         
         plt.plot([x_0, x_1], [y_0, y_1], 'r', zorder = 5)
@@ -112,9 +114,8 @@ def plotGrid():
 
 
 # finds x- and y-coordinate of a node out of json file by name
-def findXY(name):
+def findXY(data, name):
     
-    data = json.loads(open("nodes.json").read())
     found = 0
     
     for item in data["nodes"]:
@@ -125,24 +126,54 @@ def findXY(name):
             found = 1
             
     if found == 0:
-        print("Not able retrieve node coordinates to plot grid edges")
+        print("Can't retrieve node coordinates to plot grid edges")
         exit()
         
     return x,y
   
     
 
+
     
-#def getDemands():
-#    
-#    data = json.loads(open("nodes.json").read())
-#    
-#    for item in data["nodes"]:       
-#        if item["type"] == "building":
+
+#%% finds all buildings that are supplied by a specific edge
+def listBuildings(data, edge):
+    
+    # initialize array of end points with end point of the input edge
+    endings = [edge["node_1"]]
+    
+    # initialize list of buildings
+    buildings = []
+    
+    for i in range(1000):
+        
+        # check if the found ending points are buildings; add the found buildings to the buildings-array
+        for iEnding in range(np.size(endings)):
+            nodeName = endings[iEnding]
+            for item in data["nodes"]:
+                if item["name"] == nodeName and item["type"] == "building":
+                    buildings.append(nodeName)        
+        
+        # set end points to new start points
+        starts = endings
+         
+        #reset ending nodes
+        endings = []
+        
+        #find all edges beginning with any entry of starts and get their ending points
+        for iStart in range(np.size(starts)):
+            nodeName = starts[iStart]
+        
+            for item in data["edges"]:
+                if item["node_0"] == nodeName:
+                    endings.append(item["node_1"])
+        
+        # if no new edges are found, the buildings array is returned
+        if endings == []:
+            return buildings
+ 
+
+#%%
             
-            
-            
-    
-    
-    
-    
+        
+        
