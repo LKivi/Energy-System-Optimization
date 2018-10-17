@@ -9,50 +9,45 @@ import numpy as np
 from scipy.optimize import leastsq
 import cmath
 import pylab as plt
-import json
 
-import parameter
-import grid 
+
+
 
 
 #%%
-# Calculate thermal losses
-def calculateLosses():
+# Calculate thermal losses in heating grid and cooling grid
+def calculateLosses(param, data):
     
-    _, param, _ = parameter.load_params()
-    grid.generateJson()   
-    grid.plotGrid()
-    data = json.loads(open("nodes.json").read())
     
-    T_soil = calculateSoilTemperature()
+    T_soil = calculateSoilTemperature(param)
     
     Losses = {}
     Losses["heating_grid"] = np.zeros(8760)
     Losses["cooling_grid"] = np.zeros(8760)
     
-    for item in data["edges"]:
-        d = item["diameter"]
-        L = item["length"]      
-        k = (d/2 * 1/param["lambda_ins"] * np.log((d+2*param["t_pipe"]+2*param["t_ins"])/(d+2*param["t_pipe"])))**0.5         # W/(m^2*K)   heat transfer coefficient 
-        
-        Losses["heating_grid"] = Losses["heating_grid"] + k*np.pi*d*L*((param["T_heating_supply"] - T_soil) + (param["T_heating_return"] - T_soil))/1e6
-        Losses["cooling_grid"] = Losses["cooling_grid"] + k*np.pi*d*L*((T_soil - param["T_cooling_supply"]) + (T_soil - param["T_cooling_return"]))/1e6
+    grid_styles = ["heating", "cooling"]
     
-    print(Losses["heating_grid"])
-    print(Losses["cooling_grid"])
+    for style in grid_styles:
     
-    #plt.plot(np.arange(8760)/24, Losses["cooling_grid"])
-    #plt.show
+        for item in data["edges"]:
+            d = item["diameter_" + style]
+            L = item["length"]  
+            if d == 0:
+                k = 0
+            else:
+                k = (d/2 * 1/param["lambda_ins"] * np.log((d+2*param["t_pipe"]+2*param["t_ins"])/(d+2*param["t_pipe"])))**(-1)         # W/(m^2*K)   heat transfer coefficient 
+                
+            Losses[style + "_grid"] = Losses[style + "_grid"] + k*np.pi*d*L*((param["T_" + style + "_supply"] - T_soil) + (param["T_" + style + "_return"] - T_soil)) / 1e6
     
+
     return Losses
     
 
 
 #%%
 # Calculate and return time series of soil temperature in grid depth
-def calculateSoilTemperature(): 
+def calculateSoilTemperature(param): 
     
-    _, param, _ = parameter.load_params()
     
     # Load weather data
     path_weather = "input_data/weather.csv"
@@ -190,8 +185,6 @@ def cosFit(data):
 
 #%%
 
-
-calculateLosses()
 
 
 

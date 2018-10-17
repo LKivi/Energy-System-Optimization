@@ -8,42 +8,21 @@ Created: 01.09.2018
 """
 
 import numpy as np
-import pandas as pd
 import math
 #import sun
+import os
+
+import grid
+import soil
+
+
 
 def load_params():
     """
-    Returns technical and economic parameter for optmization model.
+    Returns all known data for optmization model.
     """
-
-    # Set path to input files
-#    path_weather_file = "input_data/CHN_Shanghai.Shanghai.583670_IWEC.csv"
-    path_heating_load = "input_data/heating.csv"
-    path_cooling_load = "input_data/cooling.csv"
-    path_power_load   = "input_data/electicity.csv"
-
-    # Load weather file
-#    weather_df = pd.read_csv(path_weather_file)
-#    weather_dict = weather_df.to_dict()
-
-    #%% LOADS
-    dem = {}
-
-    # load time series as numpy array
-    dem["heat"] = np.loadtxt(open(path_heating_load, "rb"), delimiter=",", usecols=(1)) / 1000000         # MW, heating load
-    dem["cool"] = np.loadtxt(open(path_cooling_load, "rb"), delimiter=",", usecols=(1)) / 1000000         # MW, cooling load
-    dem["power"] = np.loadtxt(open(path_power_load, "rb"), delimiter=",", usecols=(1)) / 1000000          # MW, electrical load grid
-
-    # Improve numeric by deleting very small loads
-    eps = 0.01 # MW
-    for load in ["power", "heat", "cool"]:
-        for k in range(len(dem[load])):
-           if dem[load][k] < eps:
-              dem[load][k] = 0
-
-
-    #%% ECONOMIC PARAMETER
+  
+    #%% GENERAL ECONOMIC PARAMETERS
     param = {"interest_rate":  0.05,        # ---,          interest rate
              "observation_time": 20.0,      # a,            project lifetime
              "price_gas": 0.0435,           # kEUR/MWh,     natural gas price
@@ -51,7 +30,7 @@ def load_params():
              "revenue_feed_in": 0.055,      # kEUR/MWh,     feed-in tariff (electricity)
              "gas_CO2_emission": 0.2,       # t_CO2/MWh,    specific CO2 emissions (natural gas)
              "grid_CO2_emission": 0.657,    # t_CO2/MWh,    specific CO2 emissions (grid)
-#             "pv_stc_area": 10000,          # m2,           roof area for pv or stc
+#             "pv_stc_area": 10000,          # m2,          roof area for pv or stc
              "MIPGap":      0.0001          # ---,          MIP gap
              }
 
@@ -80,9 +59,13 @@ def load_params():
     
     #%% PIPE PARAMETERS
     param_pipe = {"grid_depth": 1,                  # m,       installation depth beneath surface
-                  "t_pipe": 0.01,                   # m,        pipe wall thickness
-                  "lambda_ins": 0.025,              # W/(m*K),  insulation heat conductivity
-                  "t_ins": 0.1}                     # m,         insulation layer thickness
+                  "t_pipe": 0.005,                  # m,       pipe wall thickness
+                  "lambda_ins": 0.025,              # W/(m*K), insulation heat conductivity
+                  "t_ins": 0.1,                     # m,       insulation layer thickness
+                  "f_fric": 0.025,                  # ---,     pipe friction factor
+                  "dp_pipe": 150,                   # Pa/m,    maximum pipe pressure gradient
+                  "c_p":4180,                       # J/(kg*K),fluid specific heat capacity
+                  "rho":1000}                       # kg/m^3,  fluid density
     
     param.update(param_pipe)
     
@@ -94,6 +77,50 @@ def load_params():
                           "T_cooling_return": 12}      # °C,   cooling return temperature
     
     param.update(param_temperatures)
+    
+    
+    
+    #%% GRID DATA
+    # design grid properties for the given parameters
+    grid_data = grid.design_grid(param)
+    grid.plotGrid
+    
+ 
+     #%% LOADS
+
+    dem = {}
+    
+    file_total_heating = "input_data/demands/total_heating.txt"
+    file_total_cooling = "input_data/demands/total_cooling.txt"   
+    
+    if not (os.path.isfile(file_total_heating) and os.path.isfile(file_total_cooling)):
+        grid.load_demands(grid_data)
+        
+    dem["heat"] = np.loadtxt(open(file_total_heating, "rb"), delimiter = ",", usecols=(0))       # MW, heating demand 
+    dem["cool"] = np.loadtxt(open(file_total_cooling, "rb"), delimiter = ",", usecols=(0))       # MW, cooling demand   
+
+ 
+    
+#%% THERMAL LOSSES
+   
+    # calculate heating and cooling losses of the grid
+    Losses = soil.calculateLosses(param, grid_data)
+    
+    anteil = np.sum(Losses["heating_grid"])/np.sum(dem["heat"])
+    print("Anteil Wärmeverluste = " + str(anteil))
+    
+    # Add losses to demands
+    dem["heat"] = dem["heat"] + Losses["heating_grid"]
+    dem["cool"] = dem["cool"] + Losses["cooling_grid"]
+   
+#%%   
+    # Improve numeric by deleting very small loads
+    eps = 0.01 # MW
+    for load in ["heat", "cool"]:
+        for k in range(len(dem[load])):
+           if dem[load][k] < eps:
+              dem[load][k] = 0
+    
     
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     devs = {}
@@ -111,27 +138,7 @@ def load_params():
                    "eta_th": 0.5,       # ---,              thermal efficiency
                    "life_time": 30,     # a,                operation time
                    "cost_om": 0.05,     # ---,              annual operation and maintenance costs as share of investment
-                   }
-
-#    #%% AIR SOURCE HEAT PUMP
-#    devs["ASHP"] = {"inv_var": 260,     # kEUR/MW_th,       variable investment
-#                     "eta": 0.4,        # ---,              efficiency (COP / COP_rev)
-#                     "t_supply": 343,   # K,                supply temperature (343 K = 70 degC)
-#                     "COP_const": 3,    # ---,              COP, if constant COP is assumed
-#                     "max_cap": 4,      # MW,               maximum heating capacity
-#                     "min_cap": 0.05,   # MW_th,            minimum heating capacity
-#                     "life_time": 20,   # a,                operation time
-#                     "cost_om": 0.03,   # ---,              annual operation and maintenance costs as share of investment
-#                     }
-#    
-#    # Calculate COP from ambient temperature
-#    devs["ASHP"]["COP"] = calc_COP_AHSP(devs, weather_dict)
-    
-    # do not use extra function, use it here:
-#    for t in weather_dict["Dry Bulb Temperature"].keys():
-#        air_temp = weather_dict["Dry Bulb Temperature"][t]
-#        devs["ASHP"]["COP"][t] = devs["ASHP"]["eta"] * (devs["ASHP"]["t_supply"]/(devs["ASHP"]["t_supply"]-(air_temp + 273)))
-    
+                   }   
 
     #%% ABSORPTION CHILLER
     devs["AC"] = {"inv_var": 78,        # kEUR/MW_th,       variable investment
@@ -146,171 +153,6 @@ def load_params():
                   "life_time": 20,      # a,                operation time
                   "cost_om": 0.03,      # ---,              annual operation and maintenance costs as share of investment
                   }
-
-    #%% BATTERY
-#    devs["BAT"] = {"inv_var": 520,      # kEUR/MWh_el,      variable investment
-#                   "max_cap": 50,       # MWh_el,           maximum eletrical storage capacity
-#                   "min_cap": 0.05,     # MWh_el,           minimum eletrical storage capacity
-#                   "sto_loss": 0,       # 1/h,              standby losses over one time step
-#                   "eta_ch": 0.9592,    # ---,              charging efficiency
-#                   "eta_dch": 0.9592,   # ---,              discharging efficiency
-#                   "max_ch": 25,        # MW,               maximum charging power
-#                   "max_dch": 25,       # MW,               maximum discharging power
-#                   "soc_init": 0.8,     # ---,              maximum initial relative state of charge
-#                   "soc_max": 1,        # ---,              maximum relative state of charge
-#                   "soc_min": 0,        # ---,              minimum relative state of charge
-#                   "life_time": 10,     # a,                operation time
-#                   "cost_om": 0.02,     # ---,              annual operation and maintenance costs as share of investment
-#                   }
-
-    #%% (HEAT) THERMAL ENERGY STORAGE
-    devs["TES"] = {"inv_var": 11.7,     # kEUR/MWh_th,      variable investment
-                   "max_cap": 5000,       # MWh_th,           maximum thermal storage capacity
-                   "min_cap": 0,        # MWh_th,           minimum thermal storage capacity              
-                   "sto_loss": 0.005,   # 1/h,              standby losses over one time step
-                   "eta_ch": 0.975,     # ---,              charging efficiency
-                   "eta_dch": 0.975,    # ---,              discharging efficiency
-                   "max_ch": 1000,      # MW,               maximum charging power
-                   "max_dch": 1000,     # MW,               maximum discharging power
-                   "soc_init": 0.8,     # ---,              maximum initial state of charge
-                   "soc_max": 1,        # ---,              maximum state of charge
-                   "soc_min": 0,        # ---,              minimum state of charge
-                   "life_time": 20,     # a,                operation time
-                   "cost_om": 0.01,     # ---,              annual operation and maintenance costs as share of investment
-                   }
-
-    #%% COLD THERMAL ENERGY STORAGE
-#    devs["CTES"] = {"inv_var": 11.7,    # kEUR/MWh_th,      variable investment
-#                    "max_cap": 5000,      # MWh_th,           maximum thermal storage capacity
-#                    "min_cap": 0,       # MWh_th,           minimum thermal storage capacity              
-#                    "sto_loss": 0.005,  # 1/h,              standby losses over one time step
-#                    "eta_ch": 0.975,    # ---,              charging efficiency
-#                    "eta_dch": 0.975,   # ---,              discharging efficiency
-#                    "max_ch": 1000,     # MW,               maximum charging power
-#                    "max_dch": 1000,    # MW,               maximum discharging power
-#                    "soc_init": 0.8,    # ---,              maximum initial state of charge
-#                    "soc_max": 1,       # ---,              maximum state of charge
-#                    "soc_min": 0,       # ---,              minimum state of charge
-#                    "life_time": 20,    # a,                operation time
-#                    "cost_om": 0.01,    # ---,              annual operation and maintenance costs as share of investment
-#                    }
-
-    #%% WIND TURBINE
-#    devs["WT"] = {"inv_var": 650,       # kEUR/MW,        investment per wind turbine
-#                  "max_cap": 10,        # MW_el,          maximum installed wind power capacity (20 midsized turbines, 500 kW each)
-#                  "min_cap": 0,         # MW_el,          minimum installed wind power capacity
-#                  "life_time": 20,      # a,              operation time
-#                  "cost_om": 0.03,      # ---,            annual operation and maintenance costs as share of investment
-#
-#                  # parameter for wind speed calculation in hub height
-#                  "ref_height": 10,     # m,              height of wind speed measurement
-#                  "expo_a": 0.28,       # ---,            exponent for height correction according to Kleemann und Meliß
-#
-#                  # wind turbine data
-#                  "hub_height": 48,     # m,              hub height of wind turbine
-#                  "rated_power": 500,   # kW
-#                  }
-#    
-#    devs["WT"]["power_curve"] =   {0:  (0.0,    0.00),
-#                                   1:  (2.4,    0.00),
-#                                   2:  (2.5,    1.14),
-#                                   3:  (3.0,    4.37),
-#                                   4:  (3.5,   10.64),
-#                                   5:  (4.0,   18.87),
-#                                   6:  (4.5,   29.77),
-#                                   7:  (5.0,   40.39),
-#                                   8:  (5.5,   52.85),
-#                                   9:  (6.0,   69.36),
-#                                   10: (6.5,   88.02),
-#                                   11: (7,    112.19),
-#                                   12: (7.5,  134.67),
-#                                   13: (8,    165.38),
-#                                   14: (8.5,  197.08),
-#                                   15: (9,    236.89),
-#                                   16: (9.5,  279.46),
-#                                   17: (10,   328.00),
-#                                   18: (10.5, 362.93),
-#                                   19: (11,   396.64),
-#                                   20: (11.5, 435.27),
-#                                   21: (12,   465.15),
-#                                   22: (12.5, 483.63),
-#                                   23: (13,   495.95),
-#                                   24: (14,   500.00),
-#                                   25: (25,   500.00),
-#                                   26: (25.1,   0.00),
-#                                   27: (1000,   0.00),
-#                                   }
-    
-    
-#    power_curve = [(0, 0),
-#                   (2.4, 0),
-#                    (2.5, 1.14),
-#                    # ...
-#                    (14, 500.00),
-#                    (25, 500.00),
-#                    (25.01, 0.00),
-#                    ]
-#    
-#    speed_points = [power_curve[k][0] for k in range(len(power_curve))]
-#    power_points = [power_curve[k][1] for k in range(len(power_curve))]
-#    
-#    res = np.interp(2.5, speed_points, power_points)
-    
-    # add in objective function for costs: cost per MW from grid (-> line limit, how much does a power connection cost?)
-    
-    # Calculate power output
-    # move functio here:
-#    devs["WT"] = calc_wind(devs["WT"], weather_dict)
-
-    #%% PHOTOVOLTAIC
-#    devs["PV"] = {"inv_var": 909,           # kEUR/MW_el,   variable investment
-#                  "min_cap": 0,             # MW_el,        minimum electrical capacity
-#                  "life_time": 20,          # a,            operation time
-#                  "cost_om": 0.02,          # ---,          annual operation and maintenance costs as share of investment
-#
-#                  # surface orientation
-#                  "elevation": 25,          # deg,          surface elevation angle: angle between collector surface and the horizontal
-#                                            #               0 <= elevation <= 180; if elevation > 90, the surface faces downwards
-#                  "azimuth": 0,             # deg,          surface azimuth angle: south: 0
-#                                            #               -180 <= azimuth <= 180; east: negative and west positive
-#
-#                  # Collector data (based on https://www.photovoltaik4all.de/lg-solar-lg360q1c-a5-neon-r)
-#                  "power_noct": 271,        # W,
-#                  "temp_amb_noct": 20,      # degC,
-#                  "solar_noct": 800,        # W/m2,
-#                  "gamma": 0.003,           # 1/K,
-#                  "temp_cell_noct": 44,     # degC,
-#                  "module_area": 1.7272,    # m2,
-#                  "nom_module_power": 360,  # W,
-#                  }
-#    devs["PV"]["power_per_area"] = devs["PV"]["nom_module_power"] / devs["PV"]["module_area"] / 100 # MW/ha
-#   
-#    # Calculate pv power
-#    devs["PV"]["power"] = calc_pv(devs["PV"], weather_dict)
-
-    #%% SOLAR THERMAL COLLECTOR
-#    devs["STC"] = {"inv_var": 800,          # kEUR/MW_th,   variable investment
-#                   "life_time": 20,         # a,            operation time
-#                   "cost_om": 0.01,         # ---,          annual operation and maintenance costs as share of investment
-#
-#                   # Surface orientation
-#                   "elevation": 30,         # deg,          surface elevation angle: angle between collector surface and the horizontal
-#                                            #               0 <= elevation <= 180; if elevation > 90, the surface faces downwards
-#                   "azimuth": 0,            # deg,          surface azimuth angle: south: 0
-#                                            #               -180 <= azimuth <= 180; east: negative and west positive
-#
-#                   # Collector data (based on "HTHEATboost 35/10" by Arcon-Sunmark A/S)
-#                   "eta_0": 0.779,          # ---,         optical efficiency
-#                   "a1": 2.41,              # W/(m2 K),    linear loss coefficient
-#                   "a2": 0.015,             # W/(m2 K2),   quadratic loss coefficient
-#                   "temp_mean":  (95+85)/2, # degC,        mean fluid temperature
-#                   "power_per_m2": 777      # W/m2,        power output per m2 collector area at temp_mean - temp_amb = 0
-#                   }
-#
-#    devs["STC"]["power_per_area"] = devs["STC"]["power_per_m2"] / 100 # MW/ha
-#
-#    # Calculate thermal output of solar thermal colletors
-#    devs["STC"]["heat"] = calc_stc(devs, weather_dict)
 
     # Calculate annualized investment of every device
     devs = calc_annual_investment(devs, param)   
@@ -451,7 +293,7 @@ def load_params():
 #%%
 def calc_annual_investment(devs, param):
     """
-    Calculation of total investment costs including replacements and residual value (based on VDI 2067-1, pages 16-17).
+    Calculation of total investment costs per device including replacements and residual value (based on VDI 2067-1, pages 16-17).
     
     Annualized fix and variable investment is returned.
     

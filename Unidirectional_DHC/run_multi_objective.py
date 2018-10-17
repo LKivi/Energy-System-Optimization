@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-
 Author: Marco Wirtz, Institute for Energy Efficient Buildings and Indoor Climate, RWTH Aachen University, Germany
-
 Created: 01.09.2018
-
 """
 
 from optim_model import run_optim
@@ -17,7 +14,7 @@ obj_1 = "tac"          # First objective function
 obj_2 = "co2_gross"    # Second objective function
 
 # Number of pareto points for each objective function in epsilon constraint procedure
-pareto_points = 4
+pareto_points = 1
 
 # Create result directory
 dir_results = str(os.path.dirname(os.path.realpath(__file__))) + "\\Results\\" + str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + "_multi-objective__" + obj_1 + "__" + obj_2)
@@ -74,8 +71,6 @@ for obj in [obj_1, obj_2]:
         obj_eps = obj_1 # objective function bounded by epsilon
     print("\nCalculate pareto points (objective function: " + obj_min + ")")
     
-
-
     # Calculate epsilon constraints
     delta_eps = (anchor_point_1[obj_eps] - anchor_point_2[obj_eps])/(pareto_points + 1)
     eps_constr = [(anchor_point_2[obj_eps] + k * delta_eps) for k in range(1, pareto_points + 1)]
@@ -88,9 +83,5 @@ for obj in [obj_1, obj_2]:
 print("Multi-objective optimization finished.")
 
 #%% POST PROCESSING
-#import post_processing_run
-#post_processing_run.run_post_processing(dir_results)
-
-   
-
-    
+import post_processing_run
+post_processing_run.run_post_processing(dir_results)

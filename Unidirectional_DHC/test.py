@@ -4,15 +4,7 @@ Created on Wed Oct 10 22:46:17 2018
 
 @author: lkivi
 """
-import cmath
-import numpy as np
-import grid
+import parameter as p
 
-data = grid.generateJson()
+p.load_params()
 
-buildings = {}
-
-for item in data["edges"]:
-    buildings[item["name"]] = grid.listBuildings(data, item)
-    
-print(buildings)

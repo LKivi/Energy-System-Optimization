@@ -8,15 +8,59 @@ Created on Sun Oct 14 15:48:51 2018
 import numpy as np
 import json
 import pylab as plt
-from shapely.geometry import Point
+import os
 
 
+#%%
+# Calculate diameters for heating and cooling grid
+def design_grid(param):
+ 
+    data = generateJson()
+    dem = load_demands(data)    
+    
+    grid_styles = ["heating", "cooling"]
+    
+    for style in grid_styles:
+        
+        for edge in data["edges"]:
+            supplied_buildings = list_supplied_buildings(data, edge)
+
+            # sum up the demands of the buildings supplied by that edge        
+            dem_buildings = np.zeros(8760)
+            for building in supplied_buildings:
+                 dem_buildings = dem_buildings + dem[style][building]
+                 
+            # find maximum value of load on the pipe
+            pipe_load_max = np.max(dem_buildings)
+            
+            # calculate maximum mass flow in the pipe
+            m_max = pipe_load_max*1e6/(param["c_p"]*(abs(param["T_"+style+"_supply"] - param["T_"+style+"_return"])))
+            
+            # calculate pipe diameter for given pressure gradient R
+            d = ((8*m_max**2*param["f_fric"])/(param["rho"]*np.pi**2*param["dp_pipe"]))**0.2
+            
+            # round up to next who centimetre
+            d = np.around(np.around(d,2) + (np.around(d,2) < d)*0.01, 2)
+     
+            # write pipe diameter into json array
+            edge["diameter_"+style] = d
+            
+        
+    # save new json-file in project folder
+    with open("nodes.json", "w") as f: json.dump(data, f, indent=4, sort_keys=True)
+    
+    return data
+
+
+#%%
+# generate json-file of the network using the input files nodes.txt and edges.txt
+# pipe diameters are initialized with 0    
 def generateJson():
     
     data_dict = {}
     
-    path_nodes = "input_data/nodes.txt"  
-    path_edges = "input_data/edges.txt"
+    path_nodes = "input_data/nodes.txt"     # contains node properties: latidude, longitude, name and type (supply, building, node)
+    path_edges = "input_data/edges.txt"     #   
     
     nodes = {}
        
@@ -60,21 +104,20 @@ def generateJson():
                            "node_0": edges["node_0"][i],
                            "node_1": edges["node_1"][i],
                            "length": length,
-                           "diameter": 0.5})
+                           "diameter_heating": 0,
+                           "diameter_cooling": 0})
     
     data_dict = {"nodes": nodes_list,
                  "edges": edges_list}
         
-    
+    # save json-file in project folder
     with open("nodes.json", "w") as f: json.dump(data_dict, f, indent=4, sort_keys=True)
     
     return data_dict
     
  
 #%%    
-def plotGrid():
-     
-    data = json.loads(open("nodes.json").read())
+def plotGrid(data):
  
     for item in data["nodes"]:
         if item["type"] == "supply":
@@ -104,7 +147,6 @@ def plotGrid():
        
         x_0, y_0 = findXY(data,item["node_0"])
         x_1, y_1 = findXY(data,item["node_1"])
-        #print(x_0, x_1, y_0, y_1)
         
         plt.plot([x_0, x_1], [y_0, y_1], 'r', zorder = 5)
     
@@ -112,7 +154,7 @@ def plotGrid():
     plt.show()
 
 
-
+#%%
 # finds x- and y-coordinate of a node out of json file by name
 def findXY(data, name):
     
@@ -130,20 +172,16 @@ def findXY(data, name):
         exit()
         
     return x,y
-  
-    
-
-
-    
+   
 
 #%% finds all buildings that are supplied by a specific edge
-def listBuildings(data, edge):
+def list_supplied_buildings(data, edge):
     
     # initialize array of end points with end point of the input edge
     endings = [edge["node_1"]]
     
     # initialize list of buildings
-    buildings = []
+    supplied_buildings = []
     
     for i in range(1000):
         
@@ -152,7 +190,7 @@ def listBuildings(data, edge):
             nodeName = endings[iEnding]
             for item in data["nodes"]:
                 if item["name"] == nodeName and item["type"] == "building":
-                    buildings.append(nodeName)        
+                    supplied_buildings.append(nodeName)        
         
         # set end points to new start points
         starts = endings
@@ -170,10 +208,48 @@ def listBuildings(data, edge):
         
         # if no new edges are found, the buildings array is returned
         if endings == []:
-            return buildings
+            return supplied_buildings
  
 
-#%%
-            
+#%% loads demand arrays
+def load_demands(data):
+    
+    path_demands = "input_data/demands/"
+    dem = {}
+    dem["heating"] = {}
+    dem["cooling"] = {}
+    
+    dem["heating"]["sum"] = np.zeros(8760)
+    dem["cooling"]["sum"] = np.zeros(8760)
+    
+    # collect building names out of json-data
+    buildings = []
+    for item in data["nodes"]:
+        if item["type"] == "building":
+            buildings.append(item["name"])
+    
+    # get loads of each building and sum up 
+    for name in buildings:
+        dem["heating"][name] = np.loadtxt(open(path_demands + name + "_heating.txt", "rb"), delimiter = ",", usecols=(0))/1000      # MW,   heating load of building
+        dem["heating"]["sum"] = dem["heating"]["sum"] + dem["heating"][name]
+        dem["cooling"][name] = np.loadtxt(open(path_demands + name + "_cooling.txt", "rb"), delimiter = ",", usecols=(0))/1000      # MW,   cooling load of building
+        dem["cooling"]["sum"] = dem["cooling"]["sum"] + dem["cooling"][name]
+        
+    #plt.plot(range(8760), dem["heating"]["sum"])
+    #plt.plot(range(8760), dem["cooling"]["sum"])
+    
+    file_total_heating = "input_data/demands/total_heating.txt"
+    file_total_cooling = "input_data/demands/total_cooling.txt"
+    
+    if not os.path.isfile(file_total_heating):
+        np.savetxt(file_total_heating, dem["heating"]["sum"])
+    if not os.path.isfile(file_total_cooling):
+        np.savetxt(file_total_cooling, dem["cooling"]["sum"])
+    
+    
+    return dem
+        
+    
+    
         
         
