@@ -1,0 +1,65 @@
+{
+    "AC": {
+        "ann_inv_fix": 0.0,
+        "ann_inv_var": 6.25892180087392,
+        "cost_om": 0.05,
+        "eta_th": 0.8,
+        "inv_fix": 0,
+        "inv_var": 78,
+        "life_time": 20
+    },
+    "BOI": {
+        "ann_inv_fix": 0.0,
+        "ann_inv_var": 3.648409689277298,
+        "cost_om": 0.01,
+        "eta_th": 0.95,
+        "inv_fix": 0,
+        "inv_var": 52,
+        "life_time": 30
+    },
+    "CC": {
+        "COP": 5,
+        "ann_inv_fix": 0.0,
+        "ann_inv_var": 6.25892180087392,
+        "cost_om": 0.03,
+        "inv_fix": 0,
+        "inv_var": 78,
+        "life_time": 20
+    },
+    "CHP": {
+        "ann_inv_fix": 0.0,
+        "ann_inv_var": 39.992183132462685,
+        "cost_om": 0.05,
+        "eta_el": 0.35,
+        "eta_th": 0.5,
+        "inv_fix": 0,
+        "inv_var": 570,
+        "life_time": 30
+    },
+    "MIPGap": 0.0001,
+    "TES": {
+        "ann_inv_fix": 0.0,
+        "ann_inv_var": 0.938838270131088,
+        "cost_om": 0.01,
+        "eta_ch": 0.975,
+        "eta_dch": 0.975,
+        "inv_fix": 0,
+        "inv_var": 11.7,
+        "life_time": 20,
+        "max_cap": 5000,
+        "max_ch": 1000,
+        "max_dch": 1000,
+        "min_cap": 0,
+        "soc_init": 0.8,
+        "soc_max": 1,
+        "soc_min": 0,
+        "sto_loss": 0.005
+    },
+    "gas_CO2_emission": 0.2,
+    "grid_CO2_emission": 0.657,
+    "interest_rate": 0.05,
+    "observation_time": 20.0,
+    "price_el": 0.106,
+    "price_gas": 0.0435,
+    "revenue_feed_in": 0.055
+}

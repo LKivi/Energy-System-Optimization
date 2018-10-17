@@ -88,8 +88,8 @@ for obj in [obj_1, obj_2]:
 print("Multi-objective optimization finished.")
 
 #%% POST PROCESSING
-#import post_processing_run
-#post_processing_run.run_post_processing(dir_results)
+import post_processing_run
+post_processing_run.run_post_processing(dir_results)
 
    
 
