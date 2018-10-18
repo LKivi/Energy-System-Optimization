@@ -59,9 +59,7 @@ def load_params():
     
     #%% PIPE PARAMETERS
     param_pipe = {"grid_depth": 1,                  # m,       installation depth beneath surface
-                  "t_pipe": 0.005,                  # m,       pipe wall thickness
-                  "lambda_ins": 0.03,              # W/(m*K), insulation heat conductivity
-                  "t_ins": 0.05,                     # m,       insulation layer thickness
+                  "lambda_ins": 0.04,                # W/(m*K), insulation heat conductivity
                   "f_fric": 0.025,                  # ---,     pipe friction factor
                   "dp_pipe": 150,                   # Pa/m,    maximum pipe pressure gradient
                   "c_p":4180,                       # J/(kg*K),fluid specific heat capacity

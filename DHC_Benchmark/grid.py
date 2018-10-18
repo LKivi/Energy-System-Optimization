@@ -8,13 +8,18 @@ Created on Sun Oct 14 15:48:51 2018
 import numpy as np
 import json
 import pylab as plt
-import os
+from pyproj import Proj, transform
 
 
 #%%
 # Calculate diameters for heating and cooling grid
 def design_grid(param):
  
+    # standard pipes (ISO group 1, series 1, thickness range D)
+    # inner diameters
+    diameters = [0.007, 0.0103, 0.014, 0.0177, 0.0233, 0.0297, 0.0378, 0.0437, 0.0557, 0.0709, 0.0831, 0.1079, 0.1325, 0.1603, 0.2101, 0.263, 0.3127, 0.3444, 0.3938, 0.4444, 0.4954]
+    
+    
     data = generateJson()
     dem = load_demands(data)    
     
@@ -39,8 +44,11 @@ def design_grid(param):
             # calculate pipe diameter for given pressure gradient R
             d = ((8*m_max**2*param["f_fric"])/(param["rho"]*np.pi**2*param["dp_pipe"]))**0.2
             
-            # round up to next who centimetre
-            d = np.around(np.around(d,2) + (np.around(d,2) < d)*0.01, 2)
+            # choose next bigger diameter from list
+            for d_norm in diameters:
+                if d_norm >= d:
+                    d = d_norm
+                    break
      
             # write pipe diameter into json array
             edge["diameter_"+style] = d
@@ -72,23 +80,35 @@ def generateJson():
     # Earth radius
     r = 6371000
     
-    # reference coordinates (x=0, y=0)
-    lat_ref = np.amin(nodes["lat"])
-    long_ref = np.amin(nodes["long"])
+    # supply node serves as reference node (x=0, y=0)
+#    for i in np.arange(np.size(nodes["lat"])):
+#        if nodes["type"][i] == "supply":
+#            lat_ref = nodes["lat"][i]
+#            long_ref = nodes["long"][i]
     
-    # calculate xy-coordinates 
+    # find minimal lat/long
+    lat_ref = np.min(nodes["lat"])
+    long_ref = np.min(nodes["long"])
+    
+    # transform lat/long to xy-coordinates 
     nodes["x"] = r*np.arccos(np.sin(nodes["lat"])**2 + np.cos(nodes["lat"])**2 * np.cos(nodes["long"] - long_ref))
     nodes["y"] = r*np.arccos(np.sin(nodes["lat"])*np.sin(lat_ref) + np.cos(nodes["lat"])*np.cos(lat_ref))
     # replace nan entries by 0
     nodes["x"] = np.nan_to_num(nodes["x"])
     nodes["y"] = np.nan_to_num(nodes["y"])
     
+    # shift x/y-coordinates so that supply node is at x = 0, y = 0
+    for i in np.arange(np.size(nodes["x"])):
+        if nodes["type"][i] == "supply":
+            supply_x = nodes["x"][i]
+            supply_y = nodes["y"][i] 
+    nodes["x"] = nodes["x"] - supply_x
+    nodes["y"] = nodes["y"] - supply_y
+    
     edges = {}
     edges["node_0"] = np.genfromtxt(open(path_edges, "rb"),dtype = 'str', delimiter = ",", usecols=(0))
     edges["node_1"] = np.genfromtxt(open(path_edges, "rb"),dtype = 'str', delimiter = ",", usecols=(1))
-    
-    
-    
+      
     nodes_list = []
     for i in range(np.size(nodes["x"])):
         nodes_list.append({"name": nodes["name"][i], "x": nodes["x"][i], "y": nodes["y"][i], "type": str(nodes["type"][i])})
@@ -117,8 +137,10 @@ def generateJson():
     
  
 #%%    
-def plotGrid(data):
+def plotGrid():
  
+    data = json.loads(open('nodes.json').read())
+    
     for item in data["nodes"]:
         if item["type"] == "supply":
             r = 8
