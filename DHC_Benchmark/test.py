@@ -24,3 +24,6 @@ for t in t_list:
 
 plt.legend()
 plt.show
+plt.grid()
+plt.xlabel('Wärmeleitfähigkeit Isolierung W/mK')
+plt.ylabel('Anteil Wärmeverluste Wärmebedarf')
