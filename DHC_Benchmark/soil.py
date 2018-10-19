@@ -8,6 +8,7 @@ Created on Wed Oct 10 16:13:13 2018
 import numpy as np
 from scipy.optimize import leastsq
 import cmath
+import grid
 
 
 
@@ -27,6 +28,16 @@ def calculateLosses(param, data):
     dict_thick = {}
     for i in range(len(diameters)):
         dict_thick[str(diameters[i])] = thicknesses[i]
+    
+    # create  dictionary for supply temperatures
+    dict_T = {}
+    
+    dict_T["T_cooling_supply"] = param["T_cooling_supply"]
+    
+    # get time series of heating supply temperatures
+    T_supply = grid.get_T_supply()
+    dict_T["T_heating_supply"] = T_supply
+    
     
     Losses = {}
     Losses["heating_grid"] = np.zeros(8760)
@@ -49,8 +60,8 @@ def calculateLosses(param, data):
             else:
                 k = (d/2 * 1/param["lambda_ins"] * np.log((d+2*t+2*t_ins)/(d+2*t)))**(-1)         # W/(m^2*K)   heat transfer coefficient 
                 
-            Losses[style + "_grid"] = Losses[style + "_grid"] + k*np.pi*d*L*((param["T_" + style + "_supply"] - T_soil) + (param["T_" + style + "_return"] - T_soil)) / 1e6
-    
+            Losses[style + "_grid"] = Losses[style + "_grid"] + k*np.pi*d*L*((dict_T["T_" + style + "_supply"] - T_soil) + (param["T_" + style + "_return"] - T_soil)) / 1e6
+
 
     return Losses
     

@@ -21,7 +21,16 @@ def design_grid(param):
     
     
     data = generateJson()
-    dem = load_demands(data)    
+    dem = load_demands(data)
+
+    # create  dictionary for supply temperatures
+    dict_T = {}
+    
+    dict_T["T_cooling_supply"] = param["T_cooling_supply"]
+    
+    # get time series of heating supply temperatures
+    T_supply = get_T_supply()
+    dict_T["T_heating_supply"] = T_supply   
     
     grid_styles = ["heating", "cooling"]
     
@@ -35,14 +44,15 @@ def design_grid(param):
             for building in supplied_buildings:
                  dem_buildings = dem_buildings + dem[style][building]
                  
-            # find maximum value of load on the pipe
-            pipe_load_max = np.max(dem_buildings)
             
-            # calculate maximum mass flow in the pipe
-            m_max = pipe_load_max*1e6/(param["c_p"]*(abs(param["T_"+style+"_supply"] - param["T_"+style+"_return"])))
+            # calculate mass flow in the pipe
+            m_flow = dem_buildings*1e6/(param["c_p"]*(abs(dict_T["T_"+style+"_supply"] - param["T_"+style+"_return"])))
+            
+            # maximum mass flow
+            m_flow_max = np.max(m_flow)
             
             # calculate pipe diameter for given pressure gradient R
-            d = ((8*m_max**2*param["f_fric"])/(param["rho"]*np.pi**2*param["dp_pipe"]))**0.2
+            d = ((8*m_flow_max**2*param["f_fric"])/(param["rho"]*np.pi**2*param["dp_pipe"]))**0.2
             
             # choose next bigger diameter from list
             for d_norm in diameters:
@@ -129,6 +139,7 @@ def generateJson():
     
     data_dict = {"nodes": nodes_list,
                  "edges": edges_list}
+    
         
     # save json-file in project folder
     with open("nodes.json", "w") as f: json.dump(data_dict, f, indent=4, sort_keys=True)
@@ -260,6 +271,33 @@ def load_demands(data):
     
     return dem
         
+    
+
+#
+
+
+
+#%%
+def get_T_supply():
+ 
+    path_weather = "input_data/weather.csv"
+    T_amb = np.loadtxt(open(path_weather, "rb"), delimiter = ",",skiprows = 1, usecols=(0))
+    
+    T_supply = np.zeros(8760)
+    
+    for i in range(np.size(T_amb)):   
+        if T_amb[i] < -15:
+            T_supply[i] = 140
+        elif T_amb[i] < -10:
+            T_supply[i] = 140 - 17/5*(T_amb[i]+15)
+        elif T_amb[i] < 2:
+            T_supply[i] = 123
+        elif T_amb[i] < 15:
+            T_supply[i] = 123 - 28/13*(T_amb[i]-2)
+        else:
+            T_supply[i] = 95
+   
+    return T_supply
     
     
         

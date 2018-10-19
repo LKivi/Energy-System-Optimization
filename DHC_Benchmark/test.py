@@ -28,6 +28,27 @@ import grid as gr
 #plt.grid()
 #plt.xlabel('Wärmeleitfähigkeit Isolierung W/mK')
 #plt.ylabel('Anteil Wärmeverluste Wärmebedarf')
+#
+
 
 p.load_params()
-gr.plotGrid()
+
+
+
+
+
+
+#gr.plotGrid()
+
+
+#path_weather = "input_data/weather.csv"
+#T_amb = np.loadtxt(open(path_weather, "rb"), delimiter = ",",skiprows = 1, usecols=(0))
+#
+#T_supply = np.zeros(8760)
+#
+#for i in range(8760):
+#    T_supply[i] = gr.get_T_supply(T_amb[i])
+#
+#plt.scatter(T_amb, T_supply)
+#plt.show()
+#print(np.mean(T_supply))

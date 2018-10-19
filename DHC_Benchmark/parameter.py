@@ -69,8 +69,7 @@ def load_params():
     
     
     #%% TEMPERATURES
-    param_temperatures = {"T_heating_supply": 105,     # °C,   heating supply temperature
-                          "T_heating_return": 70,      # °C,   heating return temperature
+    param_temperatures = {"T_heating_return": 70,      # °C,   heating return temperature
                           "T_cooling_supply": 6,       # °C,   cooling supply temperature
                           "T_cooling_return": 12}      # °C,   cooling return temperature
     
