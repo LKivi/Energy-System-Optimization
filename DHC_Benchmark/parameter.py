@@ -59,11 +59,15 @@ def load_params():
     
     #%% PIPE PARAMETERS
     param_pipe = {"grid_depth": 1,                  # m,       installation depth beneath surface
-                  "lambda_ins": 0.04,                # W/(m*K), insulation heat conductivity
+                  "lambda_ins": 0.026,              # W/(m*K), insulation heat conductivity
+                  "lambda_PE": 0.5,                 # W(m*K),  PE heat conductivity
                   "f_fric": 0.025,                  # ---,     pipe friction factor
                   "dp_pipe": 150,                   # Pa/m,    maximum pipe pressure gradient
-                  "c_p":4180,                       # J/(kg*K),fluid specific heat capacity
-                  "rho":1000}                       # kg/m^3,  fluid density
+                  "c_f": 4180,                       # J/(kg*K),fluid specific heat capacity
+                  "rho_f": 1000,                     # kg/m^3,  fluid density
+                  "t_soil": 0.6}                    # m,        thickness of soil layer around the pipe to calculate heat transfer
+                  
+                
     
     param.update(param_pipe)
     
@@ -77,10 +81,18 @@ def load_params():
     
     
     
-    #%% GRID DATA
+    #%% GRID
     # design grid properties for the given input data and parameters
     grid_data = grid.design_grid(param)
     grid.plotGrid
+    
+    # Calculate annual grid length and annual pipe costs
+    grid_length, tac_pipes = get_grid_params(grid_data, param)
+    
+    param_grid = {"grid_length": grid_length,           # m,         total one-way grid length
+                  "tac_pipes": tac_pipes}               # EUR/a,     annualized grid invest costs
+    
+    param.update(param_grid)
     
  
      #%% LOADS
@@ -101,7 +113,9 @@ def load_params():
     Losses = soil.calculateLosses(param, grid_data)
     
     anteil = np.sum(Losses["heating_grid"])/(np.sum(dem["heat"])+np.sum(Losses["heating_grid"]))
+    anteil2 = np.sum(Losses["cooling_grid"])/(np.sum(dem["cool"])+np.sum(Losses["cooling_grid"]))
     print("Anteil Wärmeverluste = " + str(anteil))
+    print("Anteil Kälteverluste = " + str(anteil2))
     
     # Add losses to demands
     dem["heat"] = dem["heat"] + Losses["heating_grid"]
@@ -287,7 +301,7 @@ def load_params():
 #%%
 def calc_annual_investment(devs, param):
     """
-    Calculation of total investment costs per device including replacements and residual value (based on VDI 2067-1, pages 16-17).
+    Calculation of total investment costs including replacements and residual value (based on VDI 2067-1, pages 16-17).
     
     Annualized fix and variable investment is returned.
     
@@ -305,7 +319,7 @@ def calc_annual_investment(devs, param):
         # If there are no fix costs:
         devs[device]["inv_fix"] = 0
         
-        # If there are no replacement costs:
+        # If there are no additional replacement costs:
         life_time = devs[device]["life_time"]
         inv_fix_init = devs[device]["inv_fix"]
         inv_var_init = devs[device]["inv_var"]
@@ -330,3 +344,33 @@ def calc_annual_investment(devs, param):
             devs[device]["ann_inv_var"] = (inv_var_init + inv_var_repl * (invest_replacements - res_value)) * CRF 
 
     return devs
+
+
+#%% get grid length and annualized grid costs for pipes out of json data
+    
+def get_grid_params(data, param):
+    
+    length = 0
+    inv_pipes = 0
+
+    for item in data["edges"]:
+        length = length + item["length"]
+        inv_pipes = inv_pipes + (200 + item["diameter_heating"]*800 + item["diameter_cooling"]*500)*2*item["length"]
+    
+    observation_time = param["observation_time"]
+    interest_rate = param["interest_rate"]
+    q = 1 + param["interest_rate"]
+
+    # Calculate capital recovery factor (=Annuitätenfaktor)
+    CRF = ((q**observation_time)*interest_rate)/((q**observation_time)-1)
+    
+    tac_pipes = CRF * inv_pipes / 1000      # kEUR,     annualized pipe costs
+        
+    return length, tac_pipes
+        
+        
+        
+        
+        
+
+

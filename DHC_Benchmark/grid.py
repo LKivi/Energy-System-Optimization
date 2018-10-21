@@ -8,17 +8,18 @@ Created on Sun Oct 14 15:48:51 2018
 import numpy as np
 import json
 import pylab as plt
-from pyproj import Proj, transform
 
 
 #%%
-# Calculate diameters for heating and cooling grid
+# Design grid properties for the given parameters
 def design_grid(param):
  
-    # standard pipes (ISO group 1, series 1, thickness range D)
-    # inner diameters
-    diameters = [0.007, 0.0103, 0.014, 0.0177, 0.0233, 0.0297, 0.0378, 0.0437, 0.0557, 0.0709, 0.0831, 0.1079, 0.1325, 0.1603, 0.2101, 0.263, 0.3127, 0.3444, 0.3938, 0.4444, 0.4954]
-    
+    # availabel standard pipe inner diameters (heating pipes: ISO 4200 group 1, series 1, thickness range D; cooling pipes: ISO 4427-2, series SDR 9)
+    diameters = {}
+    path_heating = "input_data/pipes_heating.txt"
+    path_cooling = "input_data/pipes_cooling.txt"
+    diameters["heating"] = np.loadtxt(open(path_heating, "rb"), delimiter = ",", usecols=(0))
+    diameters["cooling"] = np.loadtxt(open(path_cooling, "rb"), delimiter = ",", usecols=(0))
     
     data = generateJson()
     dem = load_demands(data)
@@ -26,9 +27,10 @@ def design_grid(param):
     # create  dictionary for supply temperatures
     dict_T = {}
     
+    # constant cooling supply temperature
     dict_T["T_cooling_supply"] = param["T_cooling_supply"]
     
-    # get time series of heating supply temperatures
+    # time series of heating supply temperatures according to heaing curve
     T_supply = get_T_supply()
     dict_T["T_heating_supply"] = T_supply   
     
@@ -37,6 +39,7 @@ def design_grid(param):
     for style in grid_styles:
         
         for edge in data["edges"]:
+            # get list of buildings supplied by that edge
             supplied_buildings = list_supplied_buildings(data, edge)
 
             # sum up the demands of the buildings supplied by that edge        
@@ -45,17 +48,17 @@ def design_grid(param):
                  dem_buildings = dem_buildings + dem[style][building]
                  
             
-            # calculate mass flow in the pipe
-            m_flow = dem_buildings*1e6/(param["c_p"]*(abs(dict_T["T_"+style+"_supply"] - param["T_"+style+"_return"])))
+            # calculate time series of mass flowrates in the pipe
+            m_flow = dem_buildings*1e6/(param["c_f"]*(abs(dict_T["T_"+style+"_supply"] - param["T_"+style+"_return"])))
             
-            # maximum mass flow
+            # maximum mass flowrate
             m_flow_max = np.max(m_flow)
             
-            # calculate pipe diameter for given pressure gradient R
-            d = ((8*m_flow_max**2*param["f_fric"])/(param["rho"]*np.pi**2*param["dp_pipe"]))**0.2
+            # calculate pipe diameter for given maxiumum pressure gradient
+            d = ((8*m_flow_max**2*param["f_fric"])/(param["rho_f"]*np.pi**2*param["dp_pipe"]))**0.2
             
-            # choose next bigger diameter from list
-            for d_norm in diameters:
+            # choose next bigger diameter from standard diameter list
+            for d_norm in diameters[style]:
                 if d_norm >= d:
                     d = d_norm
                     break

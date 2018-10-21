@@ -19,51 +19,70 @@ def calculateLosses(param, data):
     
     T_soil = calculateSoilTemperature(param)
     
-    # available inner pipe diameters (see grid.py: design_grid)
-    diameters = [0.007, 0.0103, 0.014, 0.0177, 0.0233, 0.0297, 0.0378, 0.0437, 0.0557, 0.0709, 0.0831, 0.1079, 0.1325, 0.1603, 0.2101, 0.263, 0.3127, 0.3444, 0.3938, 0.4444, 0.4954]
-    # available pipe wall thicknesses
-    thicknesses = [0.0016, 0.0016, 0.0016, 0.0018, 0.0018, 0.002, 0.0023, 0.0023, 0.0023, 0.0026, 0.0029, 0.0032, 0.0036, 0.004, 0.0045, 0.005, 0.0056, 0.0056, 0.0063, 0.0063, 0.0063]
+    losses = {}
+
+    # HEATING GRID LOSSES  
+    losses["heating_grid"] = np.zeros(8760)
+    path = "input_data/pipes_heating.txt"
+    # available inner pipe diameters for the heating network
+    diameters = np.loadtxt(open(path, "rb"), delimiter = ",", usecols=(0))
+    # available pipe wall thicknesses for the heating network
+    thicknesses = np.loadtxt(open(path, "rb"), delimiter = ",", usecols=(1))
     
-    # create dictionary with diameters and thicknesses
-    dict_thick = {}
-    for i in range(len(diameters)):
-        dict_thick[str(diameters[i])] = thicknesses[i]
+    # create dictionary for heating pipe geometry
+    pipes = {}
+    for i in range(np.size(diameters)):
+        pipes[str(diameters[i])] = thicknesses[i]
     
-    # create  dictionary for supply temperatures
-    dict_T = {}
-    
-    dict_T["T_cooling_supply"] = param["T_cooling_supply"]
-    
-    # get time series of heating supply temperatures
+    # get time series of heating supply temperatures according to heating curve
     T_supply = grid.get_T_supply()
-    dict_T["T_heating_supply"] = T_supply
+
     
-    
-    Losses = {}
-    Losses["heating_grid"] = np.zeros(8760)
-    Losses["cooling_grid"] = np.zeros(8760)
-    
-    grid_styles = ["heating", "cooling"]
-    
-    for style in grid_styles:
-    
-        for item in data["edges"]:
-            d = item["diameter_" + style]
-            L = item["length"]  
-            t = dict_thick[str(d)]
+    for item in data["edges"]:
+        d = item["diameter_heating"]
+        L = item["length"]  
+        t = pipes[str(d)]
             
-            # thickness of insulation: linear interpolation between t_ins = 60mm at d = 50mm and t_ins = 200mm at d = 500mm:
-            t_ins = 0.06 + (d-0.05)/(0.5-0.05)*(0.2-0.06)
+        # thickness of insulation: linear interpolation between t_ins = 25mm at d = 25mm and t_ins = 55mm at d = 300mm:
+        t_ins = 0.025 + (d-0.025)/(0.3-0.025)*(0.055-0.0025)
             
-            if d == 0:
-                k = 0
-            else:
-                k = (d/2 * 1/param["lambda_ins"] * np.log((d+2*t+2*t_ins)/(d+2*t)))**(-1)         # W/(m^2*K)   heat transfer coefficient 
+        if d == 0:
+            k = 0
+        else:
+            k = (d/2 * 1/param["lambda_ins"] * np.log((d+2*t+2*t_ins)/(d+2*t)))**(-1)         # W/(m^2*K)   heat transfer coefficient 
                 
-            Losses[style + "_grid"] = Losses[style + "_grid"] + k*np.pi*d*L*((dict_T["T_" + style + "_supply"] - T_soil) + (param["T_" + style + "_return"] - T_soil)) / 1e6
+        losses["heating_grid"] = losses["heating_grid"] + k*np.pi*d*L*((T_supply - T_soil) + (param["T_heating_return"] - T_soil)) / 1e6
 
 
-    return Losses
+    # COOLING GRID LOSSES  
+    losses["cooling_grid"] = np.zeros(8760)
+    path = "input_data/pipes_cooling.txt"
+    # available inner pipe diameters for the cooling network
+    diameters = np.loadtxt(open(path, "rb"), delimiter = ",", usecols=(0))
+    # available pipe wall thicknesses for the cooling network
+    thicknesses = np.loadtxt(open(path, "rb"), delimiter = ",", usecols=(1))
+    
+    # create dictionary for cooling pipe geometry
+    pipes = {}
+    for i in range(np.size(diameters)):
+        pipes[str(diameters[i])] = thicknesses[i]
+    
+    for item in data["edges"]:
+        d = item["diameter_cooling"]
+        L = item["length"]  
+        t = pipes[str(d)]
+            
+        alpha_konv = 10
+        
+        if d == 0:
+            k = 0
+        else:
+            k = (1/alpha_konv + d/2 * 1/param["lambda_PE"] * np.log((d+2*t)/d) + d/2 * 1/param["lambda_soil"] * np.log((d+2*t+2*param["t_soil"])/(d+2*t)))**(-1)         # W/(m^2*K)   heat transfer coefficient 
+                
+        losses["cooling_grid"] = losses["cooling_grid"] + k*np.pi*d*L*((T_soil - param["T_cooling_supply"]) + (T_soil - param["T_cooling_return"])) / 1e6
+        
+
+    return losses
     
 
 
@@ -116,20 +135,20 @@ def calculateSoilTemperature(param):
     # get ground parameters
     omega = 2*np.pi/365
     
-    if param["asphaltlayer"] == 0:       #no asphalt layer, only soil
+    if param["asphaltlayer"] == 0:       # no asphalt layer, only soil
         alpha_s = param["alpha_soil"]
         epsilon_s = param["epsilon_soil"]
         f = param["evaprate_soil"]
         k = param["lambda_soil"]
-        delta_s = (2*(k/param["heatcap_soil"]*3600*24)/omega)**0.5        # damping depth soil m
+        delta_s = (2*(k/param["heatcap_soil"]*3600*24)/omega)**0.5        # m,  soil damping depth
         delta_soil = delta_s
-    else:                               # asphalt layer at surface
+    else:                               # with asphalt layer at surface
         alpha_s = param["alpha_asph"]
         epsilon_s = param["epsilon_asph"]
         f = param["evaprate_asph"]
         k = param["lambda_asph"]
-        delta_s = (2*(k/param["heatcap_asph"]*3600*24)/omega)**0.5                       # damping depth asphalt layer m  
-        delta_soil = (2*(param["lambda_soil"]/param["heatcap_soil"]*3600*24)/omega)**0.5      # damping depth soil m       
+        delta_s = (2*(k/param["heatcap_asph"]*3600*24)/omega)**0.5                          # m,    asphalt damping depth  
+        delta_soil = (2*(param["lambda_soil"]/param["heatcap_soil"]*3600*24)/omega)**0.5    # m,    soil damping depth       
  
   
     # radiation heat transfer at surface W/(m^2*K)

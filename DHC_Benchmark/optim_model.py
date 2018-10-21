@@ -33,7 +33,7 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
     # Setting up the model
     
     # Create a new model
-    model = gp.Model("DHC_Benchmark")
+    model = gp.Model("Basic_Model")
     
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     # Create new variables
@@ -76,10 +76,24 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
         for t in time_steps:
             cool[device][t] = model.addVar(vtype="C", name="cool_" + device + "_t" + str(t))
     
+    # Storage decision variables
+#    ch = {}  # Energy flow to charge storage device
+#    dch = {} # Energy flow to discharge storage device
+#    soc = {} # State of charge
+#    
+#    for device in ["TES"]:
+#        ch[device] = {}
+#        dch[device] = {}
+#        soc[device] = {}
+#        for t in time_steps:
+#            ch[device][t] = model.addVar(vtype="C", name="ch_" + device + "_t" + str(t))
+#            dch[device][t] = model.addVar(vtype="C", name="dch_" + device + "_t" + str(t))
+#            soc[device][t] = model.addVar(vtype="C", name="soc_" + device + "_t" + str(t))
+#        soc[device][len(time_steps)] = model.addVar(vtype="C", name="soc_" + device + "_t" + str(len(time_steps)))
         
     # Objective functions
     obj = {}
-    set_obj = ["tac", "co2_gross"]
+    set_obj = ["tac", "co2_gross", "power_from_grid", "net_power_from_grid"] # Mögliche Zielgrößen
     for k in set_obj:
         obj[k] = model.addVar(vtype="C", lb=-gp.GRB.INFINITY, name="obj_" + k)    
       
@@ -102,6 +116,9 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
     # Add constraints
     
     #%% CONTINUOUS SIZING OF DEVICES: minimum capacity <= capacity <= maximum capacity
+#    for device in ["TES"]:
+#        model.addConstr(cap[device] <= x[device] * devs[device]["max_cap"])
+#        model.addConstr(cap[device] >= x[device] * devs[device]["min_cap"])
     
     for t in time_steps:
         for device in ["BOI"]:
@@ -135,11 +152,34 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
 
     for t in time_steps:
         # Electricity balance
-        model.addConstr(power["CHP"][t] + power["from_grid"][t] == power["to_grid"][t] + power["CC"][t])
+        model.addConstr(power["CHP"][t] + power["from_grid"][t] == dem["power"][t] + power["to_grid"][t] + power["CC"][t])
 
     for t in time_steps:
         # Cooling balance
         model.addConstr(cool["AC"][t] + cool["CC"][t] == dem["cool"][t])    
+    
+    #%% STORAGE DEVICES
+#    for device in ["TES"]:  
+#        # Cyclic condition
+#        model.addConstr(soc[device][len(time_steps)] == soc[device][0])
+#
+#        for t in range(len(time_steps)+1):
+#            if t == 0:
+#                # Set initial state of charge
+#                model.addConstr(soc[device][0] <= cap[device] * devs[device]["soc_init"])
+#            else:
+#                # Energy balance: soc(t) = soc(t-1) + charge - discharge
+#                model.addConstr(soc[device][t] == soc[device][t-1] * (1-devs[device]["sto_loss"])
+#                    + (ch[device][t-1] * devs[device]["eta_ch"] 
+#                    - dch[device][t-1] / devs[device]["eta_dch"]))
+#                
+#                # soc_min <= state of charge <= soc_max
+#                model.addConstr(soc[device][t] <= devs[device]["soc_max"] * cap[device])
+#                model.addConstr(soc[device][t] >= devs[device]["soc_min"] * cap[device])
+#                
+#                # charging power <= maximum charging power and discharging power <= maximum discharging power 
+#                model.addConstr(ch[device][t-1] <= devs[device]["max_ch"])
+#                model.addConstr(dch[device][t-1] <= devs[device]["max_dch"])
 
     #%% SUM UP RESULTS
     gas_total = sum(sum(gas[device][t] for t in time_steps) for device in ["BOI", "CHP"])
@@ -164,6 +204,12 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
     
     # ANNUAL CO2 EMISSIONS: Implicit emissions by power supply from national grid is penalized, feed-in is ignored
     model.addConstr(obj["co2_gross"] == gas_total * param["gas_CO2_emission"] + from_grid_total * param["grid_CO2_emission"], "sum_up_gross_CO2_emissions")
+    
+    # POWER PROVIDED BY GRID
+    model.addConstr(obj["power_from_grid"] == from_grid_total)
+    
+    # NET POWER PROVIDED BY GRID
+    model.addConstr(obj["net_power_from_grid"] == from_grid_total - to_grid_total)
     
     
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
