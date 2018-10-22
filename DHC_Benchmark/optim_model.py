@@ -152,7 +152,7 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
 
     for t in time_steps:
         # Electricity balance
-        model.addConstr(power["CHP"][t] + power["from_grid"][t] == dem["power"][t] + power["to_grid"][t] + power["CC"][t])
+        model.addConstr(power["CHP"][t] + power["from_grid"][t] == power["to_grid"][t] + power["CC"][t])
 
     for t in time_steps:
         # Cooling balance
@@ -199,7 +199,7 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
 
     #%% OBJECTIVE FUNCTIONS
     # TOTAL ANNUALIZED COSTS
-    model.addConstr(obj["tac"] == sum(c_inv[dev] for dev in all_devs) + sum(c_om[dev] for dev in all_devs)  
+    model.addConstr(obj["tac"] == sum(c_inv[dev] for dev in all_devs) + sum(c_om[dev] for dev in all_devs) + param["tac_pipes"]
                                   + gas_total * param["price_gas"] + from_grid_total * param["price_el"] - to_grid_total * param["revenue_feed_in"], "sum_up_TAC")
     
     # ANNUAL CO2 EMISSIONS: Implicit emissions by power supply from national grid is penalized, feed-in is ignored

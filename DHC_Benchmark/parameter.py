@@ -46,8 +46,8 @@ def load_params():
     
     
     #%% ASPHALT LAYER PARAMETERS
-    param_asphalt = {"asphaltlayer": 0,          #---,       consideration of asphalt layer? 1 = yes, 0 = no
-                     "d_asph": 0.2,              # m,        asphalt layer thickness
+    param_asphalt = {"asphaltlayer": 1,          #---,       consideration of asphalt layer? 1 = yes, 0 = no
+                     "d_asph": 0.5,              # m,        asphalt layer thickness
                      "alpha_asph": 0.93,         #---,       asphalt surface absorptance
                      "epsilon_asph": 0.88,       #---,       asphalt surface emissivity
                      "evaprate_asph": 0.3,       #---,       asphalt surface evaporation rate
@@ -58,7 +58,7 @@ def load_params():
     
     
     #%% PIPE PARAMETERS
-    param_pipe = {"grid_depth": 1,                  # m,       installation depth beneath surface
+    param_pipe = {"grid_depth": 2,                  # m,       installation depth beneath surface
                   "lambda_ins": 0.026,              # W/(m*K), insulation heat conductivity
                   "lambda_PE": 0.5,                 # W(m*K),  PE heat conductivity
                   "f_fric": 0.025,                  # ---,     pipe friction factor
@@ -112,10 +112,10 @@ def load_params():
     # calculate heating and cooling losses of the grid
     Losses = soil.calculateLosses(param, grid_data)
     
-    anteil = np.sum(Losses["heating_grid"])/(np.sum(dem["heat"])+np.sum(Losses["heating_grid"]))
-    anteil2 = np.sum(Losses["cooling_grid"])/(np.sum(dem["cool"])+np.sum(Losses["cooling_grid"]))
-    print("Anteil Wärmeverluste = " + str(anteil))
-    print("Anteil Kälteverluste = " + str(anteil2))
+#    anteil = np.sum(Losses["heating_grid"])/(np.sum(dem["heat"])+np.sum(Losses["heating_grid"]))
+#    anteil2 = np.sum(Losses["cooling_grid"])/(np.sum(dem["cool"])+np.sum(Losses["cooling_grid"]))
+#    print("Anteil Wärmeverluste = " + str(anteil))
+#    print("Anteil Kälteverluste = " + str(anteil2))
     
     # Add losses to demands
     dem["heat"] = dem["heat"] + Losses["heating_grid"]
