@@ -149,7 +149,7 @@ def load_params():
                    }   
 
     #%% ABSORPTION CHILLER
-    devs["AC"] = {"inv_var": 78,        # kEUR/MW_th,       variable investment
+    devs["AC"] = {"inv_var": 120,        # kEUR/MW_th,       variable investment
                   "eta_th": 0.8,        # ---,              thermal efficiency (cooling power / heating power)
                   "life_time": 20,      # a,                operation time
                   "cost_om": 0.05,      # ---,              annual operation and maintenance costs as share of investment
