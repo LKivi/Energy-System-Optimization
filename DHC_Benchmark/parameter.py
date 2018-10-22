@@ -65,8 +65,11 @@ def load_params():
                   "dp_pipe": 150,                   # Pa/m,    maximum pipe pressure gradient
                   "c_f": 4180,                       # J/(kg*K),fluid specific heat capacity
                   "rho_f": 1000,                     # kg/m^3,  fluid density
-                  "t_soil": 0.6}                    # m,        thickness of soil layer around the pipe to calculate heat transfer
-                  
+                  "t_soil": 0.6,                    # m,        thickness of soil layer around the pipe to calculate heat transfer
+                  "inv_ground": 300                 # EUR/m,    preparation costs for pipe installment
+                  "inv_pipe_isolated": 600          # EUR/m,    diameter price for isolated pipes
+                  "inv_pipe_PE": 300                # EUR/m,    diameter price for PE pipe without insulation
+                  }
                 
     
     param.update(param_pipe)
@@ -149,7 +152,7 @@ def load_params():
                    }   
 
     #%% ABSORPTION CHILLER
-    devs["AC"] = {"inv_var": 120,        # kEUR/MW_th,       variable investment
+    devs["AC"] = {"inv_var": 78,        # kEUR/MW_th,       variable investment
                   "eta_th": 0.8,        # ---,              thermal efficiency (cooling power / heating power)
                   "life_time": 20,      # a,                operation time
                   "cost_om": 0.05,      # ---,              annual operation and maintenance costs as share of investment
@@ -355,7 +358,7 @@ def get_grid_params(data, param):
 
     for item in data["edges"]:
         length = length + item["length"]
-        inv_pipes = inv_pipes + (200 + item["diameter_heating"]*800 + item["diameter_cooling"]*500)*2*item["length"]
+        inv_pipes = inv_pipes + (param["inv_ground"] + item["diameter_heating"]*param["inv_pipe_isolated"] + item["diameter_cooling"]*param["inv_pipe_PE"])*2*item["length"]
     
     observation_time = param["observation_time"]
     interest_rate = param["interest_rate"]

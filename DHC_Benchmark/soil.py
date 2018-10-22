@@ -43,8 +43,8 @@ def calculateLosses(param, data):
         L = item["length"]  
         t = pipes[str(d)]
             
-        # thickness of insulation: linear interpolation between t_ins = 25mm at d = 25mm and t_ins = 55mm at d = 300mm:
-        t_ins = 0.025 + (d-0.025)/(0.3-0.025)*(0.055-0.0025)
+        # thickness of insulation: linear interpolation between t_ins = 35mm at d = 28mm and t_ins = 82mm at d = 312mm (Set Pipes GmbH, ISO 2, L = 12m)
+        t_ins = 0.035 + (d-0.028)/(0.312-0.028)*(0.082-0.0035)
             
         if d == 0:
             k = 0

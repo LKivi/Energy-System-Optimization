@@ -14,7 +14,7 @@ import pylab as plt
 # Design grid properties for the given parameters
 def design_grid(param):
  
-    # availabel standard pipe inner diameters (heating pipes: ISO 4200 group 1, series 1, thickness range D; cooling pipes: ISO 4427-2, series SDR 9)
+    # availabel standard pipe inner diameters (heating pipes: ISO 4200 / Set Pipes GmbH; cooling pipes: ISO 4427-2, series SDR 9)
     diameters = {}
     path_heating = "input_data/pipes_heating.txt"
     path_cooling = "input_data/pipes_cooling.txt"
