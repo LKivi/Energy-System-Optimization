@@ -42,6 +42,13 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
     x = {}
     for device in all_devs:
         x[device] = model.addVar(vtype="B", name="x_" + str(device))
+    
+    # Piece-wise linear function variables
+    lin = {}
+    for device in ["BOI", "CHP", "AC", "CC"]:   
+        lin[device] = {}
+        for i in range(len(devs[device]["cap_i"])):
+            lin[device][i] = model.addVar(vtype="C", name="lin_" + device + "_i" + str(i))
             
     # Device's capacity (i.e. nominal power)
     cap = {}
@@ -114,7 +121,20 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
 
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     # Add constraints
+ 
+    #%% DEVICE CAPACITIES
+    # calculate from piece-wise linear function variables
     
+    for device in ["BOI", "CHP", "AC", "CC"]:
+    
+        model.addConstr(cap[device] == sum(lin[device][i] * devs[device]["cap_i"][i] for i in range(len(devs[device]["cap_i"]))))
+        # lin: Special Ordered Sets of type 2 (SOS2 or S2): an ordered set of non-negative variables, of which at most two can be non-zero, and if 
+        # two are non-zero these must be consecutive in their ordering. 
+        model.addSOS(gp.GRB.SOS_TYPE2, [lin[device][i] for i in range(len(devs[device]["cap_i"]))])
+        
+        # Sum of linear function variables should be 1 (if device is built) or 0 (if device is not built)
+        model.addConstr(x[device] == sum(lin[device][i] for i in range(len(devs[device]["cap_i"]))))
+      
     #%% CONTINUOUS SIZING OF DEVICES: minimum capacity <= capacity <= maximum capacity
 #    for device in ["TES"]:
 #        model.addConstr(cap[device] <= x[device] * devs[device]["max_cap"])
@@ -187,15 +207,20 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
     from_grid_total = sum(power["from_grid"][t] for t in time_steps)
     to_grid_total = sum(power["to_grid"][t] for t in time_steps)
 
-    # Investments
+    # total investment costs
+    inv = {}
+    for device in all_devs:
+        inv[device] = sum(lin[device][i] * devs[device]["inv_i"][i] for i in range(len(devs[device]["cap_i"]))) 
+
+    # Annual investment costs
     c_inv = {}
     for device in all_devs:
-        c_inv[device] = cap[device] * devs[device]["ann_inv_var"]
-
+        c_inv[device] = inv[device] * devs[device]["ann_inv_factor"]
+    
     # Operation and maintenance costs
     c_om = {}
-    for device in all_devs: 
-        c_om[device] = devs[device]["cost_om"] * (cap[device] * devs[device]["inv_var"])
+    for device in all_devs:       
+        c_om[device] = devs[device]["cost_om"] * inv[device]
 
     #%% OBJECTIVE FUNCTIONS
     # TOTAL ANNUALIZED COSTS

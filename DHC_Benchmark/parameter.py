@@ -38,9 +38,9 @@ def load_params():
     #%% SOIL PARAMETERS   
     param_soil = {"alpha_soil": 0.8,            #---,       soil surface absorptance
                   "epsilon_soil": 0.9,          #---,       soil surface emissivity
-                  "evaprate_soil": 0.6,         #---,       soil surface evaporation rate
-                  "lambda_soil": 2,             # W/(m*K),  soil heat conductivity
-                  "heatcap_soil": 2e6}          # J/(m^3*K),soil volumetric heat capacity 
+                  "evaprate_soil": 0.7,         #---,       soil surface evaporation rate
+                  "lambda_soil": 1.9,           # W/(m*K),  soil heat conductivity
+                  "heatcap_soil": 2.4e6}        # J/(m^3*K),soil volumetric heat capacity 
     
     param.update(param_soil)
     
@@ -63,16 +63,21 @@ def load_params():
                   "lambda_PE": 0.5,                 # W(m*K),  PE heat conductivity
                   "f_fric": 0.025,                  # ---,     pipe friction factor
                   "dp_pipe": 150,                   # Pa/m,    maximum pipe pressure gradient
-                  "c_f": 4180,                       # J/(kg*K),fluid specific heat capacity
-                  "rho_f": 1000,                     # kg/m^3,  fluid density
-                  "t_soil": 0.6,                    # m,        thickness of soil layer around the pipe to calculate heat transfer
-                  "inv_ground": 300                 # EUR/m,    preparation costs for pipe installment
-                  "inv_pipe_isolated": 600          # EUR/m,    diameter price for isolated pipes
-                  "inv_pipe_PE": 300                # EUR/m,    diameter price for PE pipe without insulation
-                  }
+                  "c_f": 4180,                      # J/(kg*K),fluid specific heat capacity
+                  "rho_f": 1000,                    # kg/m^3,  fluid density
+                  "t_soil": 0}                      # m,        thickness of soil layer around the pipe to calculate heat transfer
+                  
+    param.update(param_pipe)  
+                
+    param_pipe_eco = {"inv_ground": 300,                 # EUR/m,    preparation costs for pipe installment
+                       "inv_pipe_isolated": 600,          # EUR/m,    diameter price for isolated pipes
+                       "inv_pipe_PE": 300,                # EUR/m,    diameter price for PE pipe without insulation
+                       "pipe_lifetime": 50,               # a,        pipe life time
+                       "omc_pipe": 0.01                  #---,        pipe operation and maintetance costs
+                       }
                 
     
-    param.update(param_pipe)
+    param.update(param_pipe_eco)
     
     
     #%% TEMPERATURES
@@ -115,10 +120,10 @@ def load_params():
     # calculate heating and cooling losses of the grid
     Losses = soil.calculateLosses(param, grid_data)
     
-#    anteil = np.sum(Losses["heating_grid"])/(np.sum(dem["heat"])+np.sum(Losses["heating_grid"]))
-#    anteil2 = np.sum(Losses["cooling_grid"])/(np.sum(dem["cool"])+np.sum(Losses["cooling_grid"]))
-#    print("Anteil Wärmeverluste = " + str(anteil))
-#    print("Anteil Kälteverluste = " + str(anteil2))
+    anteil = np.sum(Losses["heating_grid"])/(np.sum(dem["heat"])+np.sum(Losses["heating_grid"]))
+    anteil2 = np.sum(Losses["cooling_grid"])/(np.sum(dem["cool"])+np.sum(Losses["cooling_grid"]))
+    print("Anteil Wärmeverluste = " + str(anteil))
+    print("Anteil Kälteverluste = " + str(anteil2))
     
     # Add losses to demands
     dem["heat"] = dem["heat"] + Losses["heating_grid"]
@@ -137,34 +142,79 @@ def load_params():
     devs = {}
 
     #%% BOILER
-    devs["BOI"] = {"inv_var": 52,       # kEUR/MW_th,       variable investment
+    devs["BOI"] = {
                    "eta_th": 0.95,      # ---,              thermal efficiency
                    "life_time": 30,     # a,                operation time
-                   "cost_om": 0.01,     # ---,              annual operation and maintenance costs as share of investment
+                   "cost_om": 0.03,     # ---,              annual operation and maintenance costs as share of investment
                    }
+    
+    devs["BOI"]["cap_i"] =  {  0: 0,    # MW_th
+                               1: 0.5,    # MW_th
+                               2: 5     # MW_th
+                               }
+    
+    devs["BOI"]["inv_i"] = {    0: 0,    # kEUR
+                                1: 33.75,   # kEUR
+                                2: 96.2     # kEUR
+                                }
 
     #%% COMBINED HEAT AND POWER
-    devs["CHP"] = {"inv_var": 570,      # kEUR/MW_el,       variable investment
-                   "eta_el": 0.35,      # ---,              electrical efficiency
-                   "eta_th": 0.5,       # ---,              thermal efficiency
-                   "life_time": 30,     # a,                operation time
-                   "cost_om": 0.05,     # ---,              annual operation and maintenance costs as share of investment
+    devs["CHP"] = {
+                   "eta_el": 0.3,      # ---,              electrical efficiency
+                   "eta_th": 0.55,       # ---,            thermal efficiency
+                   "life_time": 30,     # a,               operation time
+                   "cost_om": 0.05,     # ---,             annual operation and maintenance costs as share of investment
                    }   
+    
+    devs["CHP"]["cap_i"] =  {  0: 0,    # MW_el
+                               1: 0.25,    # MW_el
+                               2: 1,     # MW_el
+                               3: 3     # MW_el
+                               }
+    
+    devs["CHP"]["inv_i"] = {    0: 0,     # kEUR
+                                1: 211.15,   # kEUR
+                                2: 410.7,    # kEUR
+                                3: 707.6    # kEUR
+                                } 
+    
 
     #%% ABSORPTION CHILLER
-    devs["AC"] = {"inv_var": 78,        # kEUR/MW_th,       variable investment
+    devs["AC"] = {
                   "eta_th": 0.8,        # ---,              thermal efficiency (cooling power / heating power)
-                  "life_time": 20,      # a,                operation time
-                  "cost_om": 0.05,      # ---,              annual operation and maintenance costs as share of investment
-                  }
-
-    #%% COMPRESSION CHILLER
-    devs["CC"] = {"inv_var": 78,        # kEUR/MW_th,       variable investment
-                  "COP": 5,             # ---,              coefficient of performance
                   "life_time": 20,      # a,                operation time
                   "cost_om": 0.03,      # ---,              annual operation and maintenance costs as share of investment
                   }
+    
+    devs["AC"]["cap_i"] =   {  0: 0,    # MW_th
+                               1: 0.25,    # MW_th
+                               2: 5
+                               }
+    
+    devs["AC"]["inv_i"] = {     0: 0,       # kEUR/MW_th
+                                1: 91.225,      # kEUR/MW_th
+                                2: 442.257
+                                } 
 
+    #%% COMPRESSION CHILLER
+    devs["CC"] = {
+                  "COP": 5,             # ---,              coefficient of performance
+                  "life_time": 20,      # a,                operation time
+                  "cost_om": 0.04,      # ---,              annual operation and maintenance costs as share of investment
+                  }
+    
+    
+    devs["CC"]["cap_i"] = { 0: 0,      # MW
+                            1: 0.5,    # MW
+                            2: 4      # MW
+                            }
+    
+    
+    devs["CC"]["inv_i"] = { 0: 0,          # kEUR/MW_th
+                            1: 59.75,      # kEUR/MW_th
+                            2: 278.6      # kEUR/MW_th
+                            }
+    
     # Calculate annualized investment of every device
     devs = calc_annual_investment(devs, param)   
     return (devs, param, dem)
@@ -306,7 +356,7 @@ def calc_annual_investment(devs, param):
     """
     Calculation of total investment costs including replacements and residual value (based on VDI 2067-1, pages 16-17).
     
-    Annualized fix and variable investment is returned.
+    Annuity factor is returned.
     
     """
 
@@ -314,24 +364,17 @@ def calc_annual_investment(devs, param):
     interest_rate = param["interest_rate"]
     q = 1 + param["interest_rate"]
 
-    # Calculate capital recovery factor (=Annuitätenfaktor)
+    # Calculate capital recovery factor
     CRF = ((q**observation_time)*interest_rate)/((q**observation_time)-1)
 
     for device in devs.keys():
-
-        # If there are no fix costs:
-        devs[device]["inv_fix"] = 0
         
-        # If there are no additional replacement costs:
+        # Get device life time
         life_time = devs[device]["life_time"]
-        inv_fix_init = devs[device]["inv_fix"]
-        inv_var_init = devs[device]["inv_var"]
-        inv_fix_repl = devs[device]["inv_fix"]
-        inv_var_repl = devs[device]["inv_var"]
 
         # Number of required replacements
         n = int(math.floor(observation_time / life_time))
-
+        
         # Inestment for replcaments
         invest_replacements = sum((q ** (-i * life_time)) for i in range(1, n+1))
 
@@ -340,17 +383,14 @@ def calc_annual_investment(devs, param):
 
         # Calculate annualized investments       
         if life_time > observation_time:
-            devs[device]["ann_inv_fix"] = (inv_fix_init * (1 - res_value)) * CRF 
-            devs[device]["ann_inv_var"] = (inv_var_init * (1 - res_value)) * CRF 
+            devs[device]["ann_inv_factor"] = (1 - res_value) * CRF 
         else:
-            devs[device]["ann_inv_fix"] = (inv_fix_init + inv_fix_repl * (invest_replacements - res_value)) * CRF
-            devs[device]["ann_inv_var"] = (inv_var_init + inv_var_repl * (invest_replacements - res_value)) * CRF 
+            devs[device]["ann_inv_factor"] = ( 1 + invest_replacements - res_value) * CRF 
 
     return devs
 
 
-#%% get grid length and annualized grid costs for pipes out of json data
-    
+#%% get grid length and annualized grid costs for pipes out of json data 
 def get_grid_params(data, param):
     
     length = 0
@@ -362,12 +402,16 @@ def get_grid_params(data, param):
     
     observation_time = param["observation_time"]
     interest_rate = param["interest_rate"]
+    life_time = param["pipe_lifetime"]
     q = 1 + param["interest_rate"]
 
     # Calculate capital recovery factor (=Annuitätenfaktor)
     CRF = ((q**observation_time)*interest_rate)/((q**observation_time)-1)
     
-    tac_pipes = CRF * inv_pipes / 1000      # kEUR,     annualized pipe costs
+    # Residual pipe value at t = 0
+    res_value = (life_time - observation_time) / life_time * (q ** (-observation_time))
+    
+    tac_pipes = (CRF * inv_pipes * (1 - res_value) + param["omc_pipe"] * inv_pipes) / 1000      # kEUR,     annualized pipe costs
         
     return length, tac_pipes
         

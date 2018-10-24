@@ -10,7 +10,7 @@
         },
         {
             "diameter_cooling": 0.241,
-            "diameter_heating": 0.1079,
+            "diameter_heating": 0.1071,
             "length": 48.95036671704298,
             "name": "0-2",
             "node_0": "0",
@@ -18,7 +18,7 @@
         },
         {
             "diameter_cooling": 0.122,
-            "diameter_heating": 0.0709,
+            "diameter_heating": 0.0825,
             "length": 33.620307342653845,
             "name": "2-21",
             "node_0": "2",
@@ -26,7 +26,7 @@
         },
         {
             "diameter_cooling": 0.107,
-            "diameter_heating": 0.0709,
+            "diameter_heating": 0.0703,
             "length": 55.678430592393966,
             "name": "21-1",
             "node_0": "21",
@@ -34,7 +34,7 @@
         },
         {
             "diameter_cooling": 0.214,
-            "diameter_heating": 0.0709,
+            "diameter_heating": 0.0825,
             "length": 76.74521218276521,
             "name": "2-17",
             "node_0": "2",
@@ -42,7 +42,7 @@
         },
         {
             "diameter_cooling": 0.214,
-            "diameter_heating": 0.0709,
+            "diameter_heating": 0.0703,
             "length": 61.735382529718414,
             "name": "17-18",
             "node_0": "17",
@@ -50,7 +50,7 @@
         },
         {
             "diameter_cooling": 0.153,
-            "diameter_heating": 0.0709,
+            "diameter_heating": 0.0703,
             "length": 42.53867624849202,
             "name": "18-3",
             "node_0": "18",
@@ -58,7 +58,7 @@
         },
         {
             "diameter_cooling": 0.153,
-            "diameter_heating": 0.0709,
+            "diameter_heating": 0.0703,
             "length": 95.61406579166584,
             "name": "3-4",
             "node_0": "3",
@@ -66,7 +66,7 @@
         },
         {
             "diameter_cooling": 0.138,
-            "diameter_heating": 0.0709,
+            "diameter_heating": 0.0703,
             "length": 58.86320104239009,
             "name": "0-22",
             "node_0": "0",
@@ -74,7 +74,7 @@
         },
         {
             "diameter_cooling": 0.122,
-            "diameter_heating": 0.0709,
+            "diameter_heating": 0.0703,
             "length": 76.12429727650917,
             "name": "22-5",
             "node_0": "22",
@@ -82,7 +82,7 @@
         },
         {
             "diameter_cooling": 0.122,
-            "diameter_heating": 0.0709,
+            "diameter_heating": 0.0703,
             "length": 76.88503257796692,
             "name": "5-6",
             "node_0": "5",
@@ -90,7 +90,7 @@
         },
         {
             "diameter_cooling": 0.153,
-            "diameter_heating": 0.0831,
+            "diameter_heating": 0.0825,
             "length": 26.22864989768528,
             "name": "0-20",
             "node_0": "0",
@@ -98,7 +98,7 @@
         },
         {
             "diameter_cooling": 0.153,
-            "diameter_heating": 0.0831,
+            "diameter_heating": 0.0825,
             "length": 52.2955403253274,
             "name": "20-7",
             "node_0": "20",
@@ -106,7 +106,7 @@
         },
         {
             "diameter_cooling": 0.138,
-            "diameter_heating": 0.0557,
+            "diameter_heating": 0.0545,
             "length": 27.739275590291136,
             "name": "7-23",
             "node_0": "7",
@@ -114,7 +114,7 @@
         },
         {
             "diameter_cooling": 0.122,
-            "diameter_heating": 0.0557,
+            "diameter_heating": 0.0545,
             "length": 55.351967251855775,
             "name": "23-8",
             "node_0": "23",
@@ -122,7 +122,7 @@
         },
         {
             "diameter_cooling": 0.095,
-            "diameter_heating": 0.0709,
+            "diameter_heating": 0.0703,
             "length": 43.56348435179701,
             "name": "7-9",
             "node_0": "7",
@@ -130,7 +130,7 @@
         },
         {
             "diameter_cooling": 0.03,
-            "diameter_heating": 0.0378,
+            "diameter_heating": 0.0372,
             "length": 32.12616778468169,
             "name": "9-10",
             "node_0": "9",
@@ -138,7 +138,7 @@
         },
         {
             "diameter_cooling": 0.03,
-            "diameter_heating": 0.0378,
+            "diameter_heating": 0.0372,
             "length": 74.89302424730299,
             "name": "10-11",
             "node_0": "10",
@@ -146,7 +146,7 @@
         },
         {
             "diameter_cooling": 0.095,
-            "diameter_heating": 0.0709,
+            "diameter_heating": 0.0703,
             "length": 51.1688364728398,
             "name": "9-12",
             "node_0": "9",
@@ -154,7 +154,7 @@
         },
         {
             "diameter_cooling": 0.095,
-            "diameter_heating": 0.0709,
+            "diameter_heating": 0.0703,
             "length": 16.424992731453283,
             "name": "12-13",
             "node_0": "12",
@@ -162,7 +162,7 @@
         },
         {
             "diameter_cooling": 0.095,
-            "diameter_heating": 0.0709,
+            "diameter_heating": 0.0703,
             "length": 19.000526439233283,
             "name": "13-14",
             "node_0": "13",
@@ -170,7 +170,7 @@
         },
         {
             "diameter_cooling": 0.095,
-            "diameter_heating": 0.0709,
+            "diameter_heating": 0.0703,
             "length": 16.389545948162027,
             "name": "14-15",
             "node_0": "14",
@@ -178,7 +178,7 @@
         },
         {
             "diameter_cooling": 0.095,
-            "diameter_heating": 0.0709,
+            "diameter_heating": 0.0703,
             "length": 26.104280850366635,
             "name": "15-19",
             "node_0": "15",
@@ -186,7 +186,7 @@
         },
         {
             "diameter_cooling": 0.057,
-            "diameter_heating": 0.0437,
+            "diameter_heating": 0.0431,
             "length": 23.555408332398436,
             "name": "19-16",
             "node_0": "19",
@@ -194,7 +194,7 @@
         },
         {
             "diameter_cooling": 0.069,
-            "diameter_heating": 0.0437,
+            "diameter_heating": 0.0431,
             "length": 21.524049925045095,
             "name": "18-24",
             "node_0": "18",
@@ -202,7 +202,7 @@
         },
         {
             "diameter_cooling": 0.057,
-            "diameter_heating": 0.0437,
+            "diameter_heating": 0.0431,
             "length": 0.0,
             "name": "16-15.13",
             "node_0": "16",
@@ -210,7 +210,7 @@
         },
         {
             "diameter_cooling": 0.084,
-            "diameter_heating": 0.0557,
+            "diameter_heating": 0.0545,
             "length": 10.911762332536487,
             "name": "19-15.8",
             "node_0": "19",
@@ -218,7 +218,7 @@
         },
         {
             "diameter_cooling": 0.048,
-            "diameter_heating": 0.0378,
+            "diameter_heating": 0.0372,
             "length": 11.068158154496444,
             "name": "19-15.7",
             "node_0": "19",
@@ -226,7 +226,7 @@
         },
         {
             "diameter_cooling": 0.03,
-            "diameter_heating": 0.0378,
+            "diameter_heating": 0.0372,
             "length": 0.0,
             "name": "11-15.14",
             "node_0": "11",
@@ -234,7 +234,7 @@
         },
         {
             "diameter_cooling": 0.122,
-            "diameter_heating": 0.0557,
+            "diameter_heating": 0.0545,
             "length": 0.0,
             "name": "8-15.2",
             "node_0": "8",
@@ -242,7 +242,7 @@
         },
         {
             "diameter_cooling": 0.048,
-            "diameter_heating": 0.0233,
+            "diameter_heating": 0.0217,
             "length": 13.613930757830717,
             "name": "23-15.22",
             "node_0": "23",
@@ -250,7 +250,7 @@
         },
         {
             "diameter_cooling": 0.048,
-            "diameter_heating": 0.0233,
+            "diameter_heating": 0.0217,
             "length": 23.391505749699604,
             "name": "20-15.9",
             "node_0": "20",
@@ -258,7 +258,7 @@
         },
         {
             "diameter_cooling": 0.107,
-            "diameter_heating": 0.0709,
+            "diameter_heating": 0.0703,
             "length": 13.454160564846052,
             "name": "1-15.1",
             "node_0": "1",
@@ -266,7 +266,7 @@
         },
         {
             "diameter_cooling": 0.069,
-            "diameter_heating": 0.0378,
+            "diameter_heating": 0.0372,
             "length": 12.309938955761139,
             "name": "21-15.6",
             "node_0": "21",
@@ -274,7 +274,7 @@
         },
         {
             "diameter_cooling": 0.012,
-            "diameter_heating": 0.0437,
+            "diameter_heating": 0.0431,
             "length": 18.134462977263297,
             "name": "17-16.6",
             "node_0": "17",
@@ -282,7 +282,7 @@
         },
         {
             "diameter_cooling": 0.057,
-            "diameter_heating": 0.0437,
+            "diameter_heating": 0.0431,
             "length": 16.920501509844406,
             "name": "24-16.9",
             "node_0": "24",
@@ -290,7 +290,7 @@
         },
         {
             "diameter_cooling": 0.048,
-            "diameter_heating": 0.014,
+            "diameter_heating": 0.0177,
             "length": 25.168542323777977,
             "name": "24-16.13",
             "node_0": "24",
@@ -298,7 +298,7 @@
         },
         {
             "diameter_cooling": 0.192,
-            "diameter_heating": 0.0378,
+            "diameter_heating": 0.0372,
             "length": 16.06532440121589,
             "name": "18-16.4",
             "node_0": "18",
@@ -306,7 +306,7 @@
         },
         {
             "diameter_cooling": 0.153,
-            "diameter_heating": 0.0557,
+            "diameter_heating": 0.0545,
             "length": 29.260893850363853,
             "name": "4-16.3",
             "node_0": "4",
@@ -314,7 +314,7 @@
         },
         {
             "diameter_cooling": 0.012,
-            "diameter_heating": 0.0378,
+            "diameter_heating": 0.0372,
             "length": 34.2673888033082,
             "name": "4-16.5",
             "node_0": "4",
@@ -322,7 +322,7 @@
         },
         {
             "diameter_cooling": 0.048,
-            "diameter_heating": 0.0297,
+            "diameter_heating": 0.0285,
             "length": 33.80954337913696,
             "name": "22-16.15",
             "node_0": "22",
@@ -330,7 +330,7 @@
         },
         {
             "diameter_cooling": 0.122,
-            "diameter_heating": 0.0709,
+            "diameter_heating": 0.0703,
             "length": 13.406480048576876,
             "name": "6-04.1",
             "node_0": "6",

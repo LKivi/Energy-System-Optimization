@@ -100,7 +100,7 @@ def run_post_processing(dir_results):
     #%% Load data and create plots   
     folder_list = os.listdir(dir_results)
     for folder in folder_list:
-        if "pareto" in folder:
+        if "pareto" in folder or "anchor" in folder:
             print("------------\nPost-processing: " + folder)
             time_series_flows, other_dec_var, cap = read_solution_file(dir_results + "\\" + folder + "\\model.sol", tech_list, number_steps)
             time_series_dem = read_demand_file(dir_results + "\\" + folder + "\demands.txt", demand_list, number_steps)
@@ -113,7 +113,7 @@ def run_post_processing(dir_results):
             post_processing_plot.plot_time_series(time_series, {"yearly": 1, "monthly": 0, "daily": 0}, dir_results + "\\" + folder)
             print("All plots created (%f seconds)." %(time.time() - start_time))
             
-        elif "anchor" in folder:
+        if "anchor" in folder:
             print("------------\nPost-processing: " + folder)
             time_series_flows, other_dec_var, cap = read_solution_file(dir_results + "\\" + folder + "\\model.sol", tech_list, number_steps)
             time_series_dem = read_demand_file(dir_results + "\\" + folder + "\demands.txt", demand_list, number_steps)
@@ -139,9 +139,9 @@ def run_post_processing(dir_results):
             
 
 #%%
-if __name__ == "__main__":
-    
-    # Set result directory that should be evaluated:
-    dir_results = "D:\\mwi\\Gurobi_Modelle\\EnergySystemOptimization\\Basic_Model\\Results\\2018-10-11_15-05-43_multi-objective__tac__co2_gross"
-        
-    run_post_processing(dir_results)
+#if __name__ == "__main__":
+#    
+#    # Set result directory that should be evaluated:
+#    dir_results = "C:\Users\lkivi\OneDrive\Masterarbeit\Energy-System-Optimization\DHC_Benchmark\Results\2018-10-24_18-41-38_multi-objective__tac__co2_gross"
+#        
+#    run_post_processing(dir_results)
