@@ -13,6 +13,7 @@ import os
 import parameter
 import json
 import time
+import numpy
 
 def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
 
@@ -24,10 +25,11 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
     
     (devs, param, dem) = parameter.load_params()
     
+          
     time_steps = range(8760)
 
     # Create set for devices
-    all_devs = ["BOI", "CHP", "AC", "CC"]       
+    all_devs = ["BOI", "CHP", "AC", "CC", "HP"]       
          
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     # Setting up the model
@@ -39,20 +41,20 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
     # Create new variables
 
     # Purchase decision binary variables (1 if device is installed, 0 otherwise)
-    x = {}
-    for device in all_devs:
-        x[device] = model.addVar(vtype="B", name="x_" + str(device))
+#    x = {}
+#    for device in all_devs:
+#        x[device] = model.addVar(vtype="B", name="x_" + str(device))
     
     # Piece-wise linear function variables
     lin = {}
-    for device in ["BOI", "CHP", "AC", "CC"]:   
+    for device in ["BOI", "CHP", "AC", "CC", "HP"]:   
         lin[device] = {}
         for i in range(len(devs[device]["cap_i"])):
             lin[device][i] = model.addVar(vtype="C", name="lin_" + device + "_i" + str(i))
             
     # Device's capacity (i.e. nominal power)
     cap = {}
-    for device in ["BOI", "CHP", "AC", "CC"]:
+    for device in ["BOI", "CHP", "AC", "CC", "HP"]:
         cap[device] = model.addVar(vtype="C", name="nominal_capacity_" + str(device))
     
     # Gas flow to/from devices
@@ -64,21 +66,21 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
         
     # Eletrical power to/from devices
     power = {}
-    for device in ["CHP", "CC", "from_grid", "to_grid"]:
+    for device in ["CHP", "CC", "HP", "from_grid", "to_grid"]:
         power[device] = {}
         for t in time_steps:
             power[device][t] = model.addVar(vtype="C", name="power_" + device + "_t" + str(t))
        
     # Heat to/from devices
     heat = {}
-    for device in ["BOI", "CHP", "AC"]:
+    for device in ["BOI", "CHP", "AC", "HP"]:
         heat[device] = {}
         for t in time_steps:
             heat[device][t] = model.addVar(vtype="C", name="heat_" + device + "_t" + str(t))
     
     # Cooling power to/from devices
     cool = {}
-    for device in ["CC", "AC"]:
+    for device in ["CC", "AC", "HP"]:
         cool[device] = {}
         for t in time_steps:
             cool[device][t] = model.addVar(vtype="C", name="cool_" + device + "_t" + str(t))
@@ -125,35 +127,50 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
     #%% DEVICE CAPACITIES
     # calculate from piece-wise linear function variables
     
-    for device in ["BOI", "CHP", "AC", "CC"]:
+    for device in ["BOI", "CHP", "AC", "CC", "HP"]:
     
         model.addConstr(cap[device] == sum(lin[device][i] * devs[device]["cap_i"][i] for i in range(len(devs[device]["cap_i"]))))
         # lin: Special Ordered Sets of type 2 (SOS2 or S2): an ordered set of non-negative variables, of which at most two can be non-zero, and if 
         # two are non-zero these must be consecutive in their ordering. 
         model.addSOS(gp.GRB.SOS_TYPE2, [lin[device][i] for i in range(len(devs[device]["cap_i"]))])
         
-        # Sum of linear function variables should be 1 (if device is built) or 0 (if device is not built)
-        model.addConstr(x[device] == sum(lin[device][i] for i in range(len(devs[device]["cap_i"]))))
+        # Sum of linear function variables should be 1
+        model.addConstr(1 == sum(lin[device][i] for i in range(len(devs[device]["cap_i"]))))
       
     #%% CONTINUOUS SIZING OF DEVICES: minimum capacity <= capacity <= maximum capacity
 #    for device in ["TES"]:
 #        model.addConstr(cap[device] <= x[device] * devs[device]["max_cap"])
 #        model.addConstr(cap[device] >= x[device] * devs[device]["min_cap"])
     
+    # if heat pump is not considered
+    if devs["HP"]["switch_hp"] == 0:
+        model.addConstr(cap["HP"] == 0)
+    
+    #%% DEVICE LOAD CONTRAINTS: minimal load < load < capacity
+    
     for t in time_steps:
-        for device in ["BOI"]:
+        for device in ["BOI", "HP"]:
             model.addConstr(heat[device][t] <= cap[device])
+            model.addConstr(heat[device][t] >= 0)
             
         for device in ["CHP"]:
             model.addConstr(power[device][t] <= cap[device])
+            model.addConstr(power[device][t] >= 0)
         
         for device in ["CC", "AC"]:
             model.addConstr(cool[device][t] <= cap[device])
+            model.addConstr(cool[device][t] >= 0)
+            
+        for device in ["HP"]:
+            # T_heating_supply = param["T_heating_supply"][t]
+            model.addConstr(heat[device][t] <= devs["HP"]["dT_cond"]/(param["T_heating_supply"][t] - param["T_heating_return"]) * dem["heat"][t])      # maximum HP heating
+            model.addConstr(cool[device][t] <= devs["HP"]["dT_evap"]/(param["T_cooling_return"] - param["T_cooling_supply"]) * dem["cool"][t])         # maximum HP cooling
+            
 
     #%% INPUT / OUTPUT CONSTRAINTS
     for t in time_steps:
         # Boiler
-        gas["BOI"][t] = heat["BOI"][t] / devs["BOI"]["eta_th"]
+        model.addConstr(gas["BOI"][t] == heat["BOI"][t] / devs["BOI"]["eta_th"])
         
         # Combined heat and power
         model.addConstr(power["CHP"][t] == heat["CHP"][t] / devs["CHP"]["eta_th"] * devs["CHP"]["eta_el"])
@@ -164,19 +181,27 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
 
         # Absorption chiller
         model.addConstr(cool["AC"][t] == heat["AC"][t] * devs["AC"]["eta_th"])
+        
+        # Heat Pump
+        model.addConstr(heat["HP"][t] == power["HP"][t] * devs["HP"]["COP"])        # COP relation
+        model.addConstr(heat["HP"][t] == power["HP"][t] + cool["HP"][t])            # Heat pump energy balance
+        
+        
+        
+
 
     #%% ENERGY BALANCES
     for t in time_steps:
         # Heat balance
-        model.addConstr(heat["BOI"][t] + heat["CHP"][t] == dem["heat"][t] + heat["AC"][t])
+        model.addConstr(heat["BOI"][t] + heat["CHP"][t] + heat["HP"][t] == dem["heat"][t] + heat["AC"][t])
 
     for t in time_steps:
         # Electricity balance
-        model.addConstr(power["CHP"][t] + power["from_grid"][t] == power["to_grid"][t] + power["CC"][t])
+        model.addConstr(power["CHP"][t] + power["from_grid"][t] == power["to_grid"][t] + power["CC"][t] + power["HP"][t])
 
     for t in time_steps:
         # Cooling balance
-        model.addConstr(cool["AC"][t] + cool["CC"][t] == dem["cool"][t])    
+        model.addConstr(cool["AC"][t] + cool["CC"][t] + cool["HP"][t] == dem["cool"][t])    
     
     #%% STORAGE DEVICES
 #    for device in ["TES"]:  
@@ -215,12 +240,13 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
     # Annual investment costs
     c_inv = {}
     for device in all_devs:
-        c_inv[device] = inv[device] * devs[device]["ann_inv_factor"]
+        c_inv[device] = inv[device] * devs[device]["ann_factor"]
     
     # Operation and maintenance costs
     c_om = {}
     for device in all_devs:       
         c_om[device] = devs[device]["cost_om"] * inv[device]
+    
 
     #%% OBJECTIVE FUNCTIONS
     # TOTAL ANNUALIZED COSTS
@@ -244,11 +270,11 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
     
     # Set solver parameters
     model.Params.MIPGap     = param["MIPGap"]   # ---,         gap for branch-and-bound algorithm
-    model.Params.method     = 2                 # ---,         -1: default, 0: primal simplex, 1: dual simplex, 2: barrier, etc.
-    model.Params.Heuristics = 0
-    model.Params.MIPFocus   = 2
-    model.Params.Cuts       = 3
-    model.Params.PrePasses  = 8
+    model.Params.method     = 2                 # ---,         -1: default, 0: primal simplex, 1: dual simplex, 2: barrier, etc. (only affects root node)
+    model.Params.Heuristics = 0                           # Percentage of time spent on heuristics (0 to 1)
+    model.Params.MIPFocus   = 2                           # Can improve calculation time (values: 0 to 3)
+    model.Params.Cuts       = 2                           # Cut aggressiveness (values: -1 to 3)
+    model.Params.PrePasses  = 8                           # Number of passes performed by presolving (changing can improve presolving time) values: -1 to inf
     
     # Execute calculation
     start_time = time.time()
@@ -281,6 +307,11 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
         return res_obj
     
 def save_results(devs, param, dem, model, obj_fn, obj_eps, eps_constr, dir_results):
+    
+    # Convert numpy arrays in parameters to normal lists
+    param["T_heating_supply"] = param["T_heating_supply"].tolist()
+    param["diameters"]["heating"] = param["diameters"]["heating"].tolist()
+    param["diameters"]["cooling"] = param["diameters"]["cooling"].tolist()
     
     # Write model parameter in json-file
     all_param = {**param, **devs}

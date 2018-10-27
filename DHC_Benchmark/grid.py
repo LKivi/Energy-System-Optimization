@@ -15,24 +15,17 @@ import pylab as plt
 def design_grid(param):
  
     # availabel standard pipe inner diameters (heating pipes: ISO 4200 / Set Pipes GmbH; cooling pipes: ISO 4427-2, series SDR 9)
-    diameters = {}
+    param["diameters"] = {}
     path_heating = "input_data/pipes_heating.txt"
     path_cooling = "input_data/pipes_cooling.txt"
-    diameters["heating"] = np.loadtxt(open(path_heating, "rb"), delimiter = ",", usecols=(0))
-    diameters["cooling"] = np.loadtxt(open(path_cooling, "rb"), delimiter = ",", usecols=(0))
+    param["diameters"]["heating"] = np.loadtxt(open(path_heating, "rb"), delimiter = ",", usecols=(0))
+    param["diameters"]["cooling"] = np.loadtxt(open(path_cooling, "rb"), delimiter = ",", usecols=(0))
     
     data = generateJson()
     dem = load_demands(data)
-
-    # create  dictionary for supply temperatures
-    dict_T = {}
-    
-    # constant cooling supply temperature
-    dict_T["T_cooling_supply"] = param["T_cooling_supply"]
-    
+   
     # time series of heating supply temperatures according to heaing curve
-    T_supply = get_T_supply()
-    dict_T["T_heating_supply"] = T_supply   
+    param["T_heating_supply"] = get_T_supply()
     
     grid_styles = ["heating", "cooling"]
     
@@ -49,7 +42,7 @@ def design_grid(param):
                  
             
             # calculate time series of mass flowrates in the pipe
-            m_flow = dem_buildings*1e6/(param["c_f"]*(abs(dict_T["T_"+style+"_supply"] - param["T_"+style+"_return"])))
+            m_flow = dem_buildings*1e6/(param["c_f"]*(abs(param["T_"+style+"_supply"] - param["T_"+style+"_return"])))
             
             # maximum mass flowrate
             m_flow_max = np.max(m_flow)
@@ -58,7 +51,7 @@ def design_grid(param):
             d = ((8*m_flow_max**2*param["f_fric"])/(param["rho_f"]*np.pi**2*param["dp_pipe"]))**0.2
             
             # choose next bigger diameter from standard diameter list
-            for d_norm in diameters[style]:
+            for d_norm in param["diameters"][style]:
                 if d_norm >= d:
                     d = d_norm
                     break
@@ -70,7 +63,7 @@ def design_grid(param):
     # save new json-file in project folder
     with open("nodes.json", "w") as f: json.dump(data, f, indent=4, sort_keys=True)
     
-    return data
+    return data, param
 
 
 #%%

@@ -7,6 +7,11 @@ Created: 01.09.2018
 from optim_model import run_optim
 import os
 import datetime
+import time
+
+# Start time of procedure
+start_time_procedure = time.time()
+
   
 # Objective function
 # available: "tac", "co2_onsite", "co2_net", "co2_gross", "invest", "power_from_grid", "net_power_from_grid", "renewable_abs"
@@ -14,7 +19,7 @@ obj_1 = "tac"          # First objective function
 obj_2 = "co2_gross"    # Second objective function
 
 # Number of pareto points for each objective function in epsilon constraint procedure
-pareto_points = 4
+pareto_points = 0
 
 # Create result directory
 dir_results = str(os.path.dirname(os.path.realpath(__file__))) + "\\Results\\" + str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + "_multi-objective__" + obj_1 + "__" + obj_2)
@@ -85,3 +90,5 @@ print("Multi-objective optimization finished.")
 #%% POST PROCESSING
 import post_processing_run
 post_processing_run.run_post_processing(dir_results)
+
+print("Total procedure time: %f" %(time.time() - start_time_procedure))

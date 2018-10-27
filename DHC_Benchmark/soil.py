@@ -21,7 +21,8 @@ def calculateLosses(param, data):
     
     losses = {}
 
-    # HEATING GRID LOSSES  
+    #%% HEATING GRID LOSSES  
+    
     losses["heating_grid"] = np.zeros(8760)
     path = "input_data/pipes_heating.txt"
     # available inner pipe diameters for the heating network
@@ -32,7 +33,7 @@ def calculateLosses(param, data):
     # create dictionary for heating pipe geometry
     pipes = {}
     for i in range(np.size(diameters)):
-        pipes[str(diameters[i])] = thicknesses[i]
+        pipes[diameters[i]] = thicknesses[i]
     
     # get time series of heating supply temperatures according to heating curve
     T_supply = grid.get_T_supply()
@@ -41,7 +42,7 @@ def calculateLosses(param, data):
     for item in data["edges"]:
         d = item["diameter_heating"]
         L = item["length"]  
-        t = pipes[str(d)]
+        t = pipes[d]
             
         # thickness of insulation: linear interpolation between t_ins = 35mm at d = 28mm and t_ins = 82mm at d = 312mm (Set Pipes GmbH, ISO 2, L = 12m)
         t_ins = 0.035 + (d-0.028)/(0.312-0.028)*(0.082-0.0035)
@@ -54,7 +55,8 @@ def calculateLosses(param, data):
         losses["heating_grid"] = losses["heating_grid"] + k*np.pi*d*L*((T_supply - T_soil) + (param["T_heating_return"] - T_soil)) / 1e6
 
 
-    # COOLING GRID LOSSES  
+    #%% COOLING GRID LOSSES  
+    
     losses["cooling_grid"] = np.zeros(8760)
     path = "input_data/pipes_cooling.txt"
     # available inner pipe diameters for the cooling network
