@@ -105,6 +105,11 @@ def load_params():
         
     dem["heat"] = dem_buildings["heating"]["sum"]      # MW, heating demand of all buildings
     dem["cool"] = dem_buildings["cooling"]["sum"]      # MW, cooling demand of all buildings  
+    
+#    Q_Nenn = np.max(dem["heat"])
+#    Q_Jahr = np.sum(dem["heat"])
+#    Q0_Nenn = np.max(dem["cool"])
+#    Q0_Jahr = np.sum(dem["cool"])    
 
  
     
@@ -244,7 +249,12 @@ def load_params():
     
  #%%   
     # Calculate annuity factor of every device and annualized costs of pipes
-    devs, param = calc_annual_investment(devs, param, grid_data)   
+    devs, param = calc_annual_investment(devs, param, grid_data)  
+    
+#    print("Trassenlänge: " + str(param["length_pipes"]) +  " m")
+#    print("Leistungsdichte Wärmenetz: " + str(Q_Nenn/param["length_pipes"]*1000) + " MW/km  /  " + str(Q_Jahr/param["length_pipes"]*1000) + " MWh/(km*a)")
+#    print("Leistungsdichte Kältenetz: " + str(Q0_Nenn/param["length_pipes"]*1000) + " MW/km  /  " + str(Q0_Jahr/param["length_pipes"]*1000) + " MWh/(km*a)")
+#    
     return (devs, param, dem)
 
 #%%
