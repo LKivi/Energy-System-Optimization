@@ -25,11 +25,12 @@ def load_params():
     #%% GENERAL PARAMETERS
     param = {"interest_rate":  0.05,        # ---,          interest rate
              "observation_time": 20.0,      # a,            project lifetime
-             "price_gas": 0.0435,           # kEUR/MWh,     natural gas price
-             "price_el": 0.106,             # kEUR/MWh,     electricity price (grid)
+             "price_gas": 0.0489,           # kEUR/MWh,     natural gas price
+             "price_el": 0.185,             # kEUR/MWh,     electricity price (grid)
+             "price_grid": 324,             # kEUR/(MW*a)   capacity charge for grid usage
              "revenue_feed_in": 0.055,      # kEUR/MWh,     feed-in tariff (electricity)
              "gas_CO2_emission": 0.2,       # t_CO2/MWh,    specific CO2 emissions (natural gas)
-             "grid_CO2_emission": 0.657,    # t_CO2/MWh,    specific CO2 emissions (grid)
+             "grid_CO2_emission": 0.534,    # t_CO2/MWh,    specific CO2 emissions (grid)
 #             "pv_stc_area": 10000,          # m2,          roof area for pv or stc
              "MIPGap":      0.0001          # ---,          MIP gap
              }
@@ -47,7 +48,7 @@ def load_params():
     
     #%% ASPHALT LAYER PARAMETERS
     param_asphalt = {"asphaltlayer": 1,          #---,       consideration of asphalt layer? 1 = yes, 0 = no
-                     "d_asph": 0.5,              # m,        asphalt layer thickness
+                     "d_asph": 0.18,             # m,        asphalt layer thickness
                      "alpha_asph": 0.93,         #---,       asphalt surface absorptance
                      "epsilon_asph": 0.88,       #---,       asphalt surface emissivity
                      "evaprate_asph": 0.3,       #---,       asphalt surface evaporation rate
@@ -61,11 +62,12 @@ def load_params():
     param_pipe = {"grid_depth": 2,                  # m,       installation depth beneath surface
                   "lambda_ins": 0.026,              # W/(m*K), insulation heat conductivity
                   "lambda_PE": 0.5,                 # W(m*K),  PE heat conductivity
+                  "lambda_steel": 15,               # W(m*K),  rust-free steel heat conductivity
                   "f_fric": 0.025,                  # ---,     pipe friction factor
                   "dp_pipe": 150,                   # Pa/m,    nominal pipe pressure gradient (for network without heat losses)
                   "c_f": 4180,                      # J/(kg*K),fluid specific heat capacity
                   "rho_f": 1000,                    # kg/m^3,  fluid density
-                  "t_soil": 0}                      # m,        thickness of soil layer around the pipe to calculate heat transfer
+                  "t_soil": 0.6}                    # m,        thickness of soil layer around the pipe to calculate heat transfer
                   
     param.update(param_pipe)  
                 
@@ -91,7 +93,7 @@ def load_params():
     #%% GRID SIZING
     # design grid properties for the given input data and parameters
     grid_data, param = grid.design_grid(param)
-#    grid.plotGrid()
+    #grid.plotGrid()
     
     
      #%% LOADS
@@ -111,14 +113,19 @@ def load_params():
     # calculate heating and cooling losses of the grid
     losses = soil.calculateLosses(param, grid_data)
     
-#    anteil = np.sum(losses["heating_grid"])/(np.sum(dem["heat"])+np.sum(losses["heating_grid"]))
-#    anteil2 = np.sum(losses["cooling_grid"])/(np.sum(dem["cool"])+np.sum(losses["cooling_grid"]))
-#    print("Anteil Wärmeverluste = " + str(anteil))
-#    print("Anteil Kälteverluste = " + str(anteil2))
-    
     # Add losses to building demands to get total grid demand
     dem["heat"] = dem["heat"] + losses["heating_grid"]
     dem["cool"] = dem["cool"] + losses["cooling_grid"]
+  
+    
+    
+#    time_max = np.argmax(dem["heat"])
+#    time_max2 = np.argmax(dem["cool"])
+#    
+#    anteil_max = losses["heating_grid"][time_max]/dem["heat"][time_max]
+#    anteil_max2 = losses["cooling_grid"][time_max2]/dem["cool"][time_max2]
+#    print("Anteil Wärmeverluste zum Zeitpunkt des höchsten Gesamtwärmebedarfs = " + str(anteil_max))
+#    print("Anteil Kälteverluste zum Zeitpunkt des höchsten Gesamtkältebedarfs = " + str(anteil_max2))
     
     
 #%%   
@@ -135,12 +142,14 @@ def load_params():
 
     #%% BOILER
     devs["BOI"] = {
-                   "eta_th": 0.92,      # ---,              thermal efficiency
+                   "eta_th": 0.9,      # ---,              thermal efficiency
                    "life_time": 30,     # a,                operation time
                    "cost_om": 0.03,     # ---,              annual operation and maintenance costs as share of investment
                    }
     
-    devs["BOI"]["cap_i"] =  {  0: 0,        # MW_th
+    
+    # KOSTEN NOCHMAL ÜBERARBEITEN!!
+    devs["BOI"]["cap_i"] =  {  0: 0,        # MW_th 
                                1: 0.5,      # MW_th
                                2: 5         # MW_th
                                }
@@ -173,7 +182,7 @@ def load_params():
 
     #%% WATER SOURCE HEAT PUMP
     devs["HP"] = {
-                  "switch_hp": 0,        #---, 0: system without heat pump, 1:system with heat pump
+                  "switch_hp": 1,        #---, 0: system without heat pump, 1:system with heat pump
                   "dT_pinch": 5,         # K,    temperature difference between heat exchanger sides at pinch point
                   "life_time": 20,       # a,    operation time
                   "cost_om": 0.04,       #---,   annual operation and maintenance as share of investment
@@ -182,6 +191,7 @@ def load_params():
                   "dT_cond": 20          # K, temperature difference of water in condensator
                   }
     
+    # KOSTEN NOCHMAL ÜBERARBEITEN!!
     devs["HP"]["cap_i"] =   {  0: 0,        # MW_th
                                1: 0.5,      # MW_th
                                2: 4         # MW_th
@@ -196,7 +206,7 @@ def load_params():
 
     #%% ABSORPTION CHILLER
     devs["AC"] = {
-                  "eta_th": 0.8,        # ---,              nominal thermal efficiency (cooling power / heating power)
+                  "eta_th": 0.68,        # ---,             nominal thermal efficiency (cooling power / heating power)
                   "life_time": 20,      # a,                operation time
                   "cost_om": 0.03,      # ---,              annual operation and maintenance costs as share of investment
                   }
@@ -208,9 +218,9 @@ def load_params():
                                }
     
     devs["AC"]["inv_i"] = {     0: 0,           # kEUR
-                                1: 135.4,       # kEUR
-                                2: 313.058,     # kEUR
-                                3: 617.287      # kEUR
+                                1: 135.5,       # kEUR
+                                2: 313.672,     # kEUR
+                                3: 619.333      # kEUR
                                 } 
 
     #%% COMPRESSION CHILLER

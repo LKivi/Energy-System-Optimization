@@ -84,6 +84,10 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
         cool[device] = {}
         for t in time_steps:
             cool[device][t] = model.addVar(vtype="C", name="cool_" + device + "_t" + str(t))
+  
+    # grid transmission power
+    grid_limit = model.addVar(vtype = "C", name="grid_limit")  
+    
     
     # Storage decision variables
 #    ch = {}  # Energy flow to charge storage device
@@ -125,8 +129,8 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
     # Add constraints
  
     #%% DEVICE CAPACITIES
-    # calculate from piece-wise linear function variables
-    
+   
+    # calculate from piece-wise linear function variables    
     for device in ["BOI", "CHP", "AC", "CC", "HP"]:
     
         model.addConstr(cap[device] == sum(lin[device][i] * devs[device]["cap_i"][i] for i in range(len(devs[device]["cap_i"]))))
@@ -136,6 +140,7 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
         
         # Sum of linear function variables should be 1
         model.addConstr(1 == sum(lin[device][i] for i in range(len(devs[device]["cap_i"]))))
+        
       
     #%% CONTINUOUS SIZING OF DEVICES: minimum capacity <= capacity <= maximum capacity
 #    for device in ["TES"]:
@@ -151,20 +156,21 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
     for t in time_steps:
         for device in ["BOI", "HP"]:
             model.addConstr(heat[device][t] <= cap[device])
-            model.addConstr(heat[device][t] >= 0)
             
         for device in ["CHP"]:
             model.addConstr(power[device][t] <= cap[device])
-            model.addConstr(power[device][t] >= 0)
         
         for device in ["CC", "AC"]:
             model.addConstr(cool[device][t] <= cap[device])
-            model.addConstr(cool[device][t] >= 0)
             
         for device in ["HP"]:
-            # T_heating_supply = param["T_heating_supply"][t]
             model.addConstr(heat[device][t] <= devs["HP"]["dT_cond"]/(param["T_heating_supply"][t] - param["T_heating_return"]) * dem["heat"][t])      # maximum HP heating
             model.addConstr(cool[device][t] <= devs["HP"]["dT_evap"]/(param["T_cooling_return"] - param["T_cooling_supply"]) * dem["cool"][t])         # maximum HP cooling
+            
+        # limitation of power from grid       
+        for device in ["from_grid"]:
+            model.addConstr(power[device][t] <= grid_limit)        
+        
             
 
     #%% INPUT / OUTPUT CONSTRAINTS
@@ -251,7 +257,8 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
     #%% OBJECTIVE FUNCTIONS
     # TOTAL ANNUALIZED COSTS
     model.addConstr(obj["tac"] == sum(c_inv[dev] for dev in all_devs) + sum(c_om[dev] for dev in all_devs) + param["tac_pipes"]
-                                  + gas_total * param["price_gas"] + from_grid_total * param["price_el"] - to_grid_total * param["revenue_feed_in"], "sum_up_TAC")
+                                  + gas_total * param["price_gas"] + from_grid_total * param["price_el"] + grid_limit * param["price_grid"]
+                                  - to_grid_total * param["revenue_feed_in"], "sum_up_TAC")
     
     # ANNUAL CO2 EMISSIONS: Implicit emissions by power supply from national grid is penalized, feed-in is ignored
     model.addConstr(obj["co2_gross"] == gas_total * param["gas_CO2_emission"] + from_grid_total * param["grid_CO2_emission"], "sum_up_gross_CO2_emissions")

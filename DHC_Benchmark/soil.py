@@ -26,7 +26,7 @@ def calculateLosses(param, data):
     losses["heating_grid"] = np.zeros(8760)
     path = "input_data/pipes_heating.txt"
     # available inner pipe diameters for the heating network
-    diameters = np.loadtxt(open(path, "rb"), delimiter = ",", usecols=(0))
+    diameters = param["diameters"]["heating"]
     # available pipe wall thicknesses for the heating network
     thicknesses = np.loadtxt(open(path, "rb"), delimiter = ",", usecols=(1))
     
@@ -60,7 +60,7 @@ def calculateLosses(param, data):
     losses["cooling_grid"] = np.zeros(8760)
     path = "input_data/pipes_cooling.txt"
     # available inner pipe diameters for the cooling network
-    diameters = np.loadtxt(open(path, "rb"), delimiter = ",", usecols=(0))
+    diameters = param["diameters"]["cooling"]
     # available pipe wall thicknesses for the cooling network
     thicknesses = np.loadtxt(open(path, "rb"), delimiter = ",", usecols=(1))
     
