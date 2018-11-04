@@ -1,0 +1,6 @@
+Runtime 0.0
+ObjectiveValue 62006.36330258754
+ModelStatus 2
+NodeCount 0.0
+MIPGap 0.01
+

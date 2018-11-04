@@ -25,13 +25,14 @@ def load_params():
     #%% GENERAL PARAMETERS
     param = {"interest_rate":  0.05,        # ---,          interest rate
              "observation_time": 20.0,      # a,            project lifetime
-             "price_gas": 0.0489,           # kEUR/MWh,     natural gas price
-             "price_el": 0.185,             # kEUR/MWh,     electricity price (grid)
-             "price_grid": 324,             # kEUR/(MW*a)   capacity charge for grid usage
+             "price_gas": 0.03524,          # kEUR/MWh,     natural gas price
+             "price_cap_gas": 12.149,       # kEUR/(MW*a)   capacity charge for gas grid usage
+             "price_el": 0.1504,            # kEUR/MWh,     electricity price
+             "price_cap_el": 38.83,         # kEUR/(MW*a)   capacity charge for electricity grid usage
              "revenue_feed_in": 0.055,      # kEUR/MWh,     feed-in tariff (electricity)
              "gas_CO2_emission": 0.2,       # t_CO2/MWh,    specific CO2 emissions (natural gas)
-             "grid_CO2_emission": 0.534,    # t_CO2/MWh,    specific CO2 emissions (grid)
-#             "pv_stc_area": 10000,          # m2,          roof area for pv or stc
+             "grid_CO2_emission": 0.503,    # t_CO2/MWh,    specific CO2 emissions (grid)
+#             "pv_stc_area": 10000,         # m2,           roof area for pv or stc
              "MIPGap":      0.0001          # ---,          MIP gap
              }
 
@@ -59,7 +60,7 @@ def load_params():
     
     
     #%% PIPE PARAMETERS
-    param_pipe = {"grid_depth": 2,                  # m,       installation depth beneath surface
+    param_pipe = {"grid_depth": 1.5,                # m,       installation depth beneath surface
                   "lambda_ins": 0.026,              # W/(m*K), insulation heat conductivity
                   "lambda_PE": 0.5,                 # W(m*K),  PE heat conductivity
                   "lambda_steel": 15,               # W(m*K),  rust-free steel heat conductivity
@@ -67,7 +68,7 @@ def load_params():
                   "dp_pipe": 150,                   # Pa/m,    nominal pipe pressure gradient (for network without heat losses)
                   "c_f": 4180,                      # J/(kg*K),fluid specific heat capacity
                   "rho_f": 1000,                    # kg/m^3,  fluid density
-                  "t_soil": 0.6}                    # m,        thickness of soil layer around the pipe to calculate heat transfer
+                  "t_soil": 0.6}                    # m,       thickness of soil layer around the pipe to calculate heat transfer into ground
                   
     param.update(param_pipe)  
                 
@@ -147,9 +148,9 @@ def load_params():
 
     #%% BOILER
     devs["BOI"] = {
-                   "eta_th": 0.9,      # ---,              thermal efficiency
-                   "life_time": 30,     # a,                operation time
-                   "cost_om": 0.03,     # ---,              annual operation and maintenance costs as share of investment
+                   "eta_th": 0.9,       # ---,    thermal efficiency
+                   "life_time": 30,     # a,      operation time
+                   "cost_om": 0.03,     # ---,    annual operation and maintenance costs as share of investment
                    }
     
     
@@ -166,8 +167,8 @@ def load_params():
 
     #%% COMBINED HEAT AND POWER
     devs["CHP"] = {
-                   "eta_el": 0.3,      # ---,              electrical efficiency
-                   "eta_th": 0.55,       # ---,            thermal efficiency
+                   "eta_el": 0.419,     # ---,            electrical efficiency
+                   "eta_th": 0.448,     # ---,           thermal efficiency
                    "life_time": 30,     # a,               operation time
                    "cost_om": 0.05,     # ---,             annual operation and maintenance costs as share of investment
                    }   
@@ -187,14 +188,15 @@ def load_params():
 
     #%% WATER SOURCE HEAT PUMP
     devs["HP"] = {
-                  "switch_hp": 1,        #---, 0: system without heat pump, 1:system with heat pump
+                  "switch_hp": 1,        #---,   0: system without heat pump, 1:system with heat pump
                   "dT_pinch": 5,         # K,    temperature difference between heat exchanger sides at pinch point
                   "life_time": 20,       # a,    operation time
                   "cost_om": 0.04,       #---,   annual operation and maintenance as share of investment
-                  "COP": 2,              #---, COP estimation
-                  "dT_evap": 6,          # K, temperature difference of water in evaporator
-                  "dT_cond": 20          # K, temperature difference of water in condensator
+                  "dT_evap": 6,          # K,    temperature difference of water in evaporator
+                  "dT_cond": 20           # K,    temperature difference of water in condensator
                   }
+    
+    devs["HP"]["COP"] = calc_COP(devs, param)
     
     # KOSTEN NOCHMAL ÜBERARBEITEN!!
     devs["HP"]["cap_i"] =   {  0: 0,        # MW_th
@@ -211,9 +213,9 @@ def load_params():
 
     #%% ABSORPTION CHILLER
     devs["AC"] = {
-                  "eta_th": 0.68,        # ---,             nominal thermal efficiency (cooling power / heating power)
-                  "life_time": 20,      # a,                operation time
-                  "cost_om": 0.03,      # ---,              annual operation and maintenance costs as share of investment
+                  "eta_th": 0.68,       # ---,        nominal thermal efficiency (cooling power / heating power)
+                  "life_time": 20,      # a,          operation time
+                  "cost_om": 0.03,      # ---,        annual operation and maintenance costs as share of investment
                   }
     
     devs["AC"]["cap_i"] =   {  0: 0,        # MW_th
@@ -448,4 +450,20 @@ def calc_annual_investment(devs, param, grid_data):
     return devs, param
 
 
-         
+#%% COP of watersourve heat pump based on Carnot
+def calc_COP(devs, param):
+    
+    t_h = 273.15 + param["T_heating_return"] + devs["HP"]["dT_cond"] + devs["HP"]["dT_pinch"]
+    t_c = 273.15 + param["T_cooling_return"] - devs["HP"]["dT_evap"] - devs["HP"]["dT_pinch"]
+    
+    COP = 0.4 * t_h / (t_h - t_c)
+    
+    return COP
+    
+    
+
+
+
+
+
+        

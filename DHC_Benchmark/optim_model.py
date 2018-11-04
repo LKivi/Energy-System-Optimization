@@ -35,7 +35,7 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
     # Setting up the model
     
     # Create a new model
-    model = gp.Model("Basic_Model")
+    model = gp.Model("DHC_Benchmark")
     
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     # Create new variables
@@ -86,7 +86,12 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
             cool[device][t] = model.addVar(vtype="C", name="cool_" + device + "_t" + str(t))
   
     # grid transmission power
-    grid_limit = model.addVar(vtype = "C", name="grid_limit")  
+    grid_limit_el = model.addVar(vtype = "C", name="grid_limit_el")  
+    grid_limit_gas = model.addVar(vtype = "C", name="grid_limit_gas")
+    
+    # total energy amounts taken from grid
+    from_grid_total = model.addVar(vtype = "C", name="from_grid_total") 
+    gas_total = model.addVar(vtype = "C", name="gas_total") 
     
     
     # Storage decision variables
@@ -169,7 +174,9 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
             
         # limitation of power from grid       
         for device in ["from_grid"]:
-            model.addConstr(power[device][t] <= grid_limit)        
+            model.addConstr(power[device][t] <= grid_limit_el)   
+            
+        model.addConstr(sum(gas[device][t] for device in ["BOI", "CHP"]) <= grid_limit_gas)
         
             
 
@@ -233,9 +240,9 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
 #                model.addConstr(dch[device][t-1] <= devs[device]["max_dch"])
 
     #%% SUM UP RESULTS
-    gas_total = sum(sum(gas[device][t] for t in time_steps) for device in ["BOI", "CHP"])
+    model.addConstr(gas_total == sum(sum(gas[device][t] for t in time_steps) for device in ["BOI", "CHP"]))
   
-    from_grid_total = sum(power["from_grid"][t] for t in time_steps)
+    model.addConstr(from_grid_total == sum(power["from_grid"][t] for t in time_steps))
     to_grid_total = sum(power["to_grid"][t] for t in time_steps)
 
     # total investment costs
@@ -256,8 +263,9 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
 
     #%% OBJECTIVE FUNCTIONS
     # TOTAL ANNUALIZED COSTS
-    model.addConstr(obj["tac"] == sum(c_inv[dev] for dev in all_devs) + sum(c_om[dev] for dev in all_devs) + param["tac_pipes"]
-                                  + gas_total * param["price_gas"] + from_grid_total * param["price_el"] + grid_limit * param["price_grid"]
+    model.addConstr(obj["tac"] == sum(c_inv[dev] for dev in all_devs) + sum(c_om[dev] for dev in all_devs) + param["tac_pipes"]                         
+                                  + gas_total * param["price_gas"] + grid_limit_gas * param["price_cap_gas"]
+                                  + from_grid_total * param["price_el"] + grid_limit_el * param["price_cap_el"]
                                   - to_grid_total * param["revenue_feed_in"], "sum_up_TAC")
     
     # ANNUAL CO2 EMISSIONS: Implicit emissions by power supply from national grid is penalized, feed-in is ignored
@@ -276,8 +284,8 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
     print("Precalculation and model set up done in %f seconds." %(time.time() - start_time))
     
     # Set solver parameters
-    model.Params.MIPGap     = param["MIPGap"]   # ---,         gap for branch-and-bound algorithm
-    model.Params.method     = 2                 # ---,         -1: default, 0: primal simplex, 1: dual simplex, 2: barrier, etc. (only affects root node)
+    model.Params.MIPGap     = param["MIPGap"]             # ---,  gap for branch-and-bound algorithm
+    model.Params.method     = 2                           # ---, -1: default, 0: primal simplex, 1: dual simplex, 2: barrier, etc. (only affects root node)
     model.Params.Heuristics = 0                           # Percentage of time spent on heuristics (0 to 1)
     model.Params.MIPFocus   = 2                           # Can improve calculation time (values: 0 to 3)
     model.Params.Cuts       = 2                           # Cut aggressiveness (values: -1 to 3)

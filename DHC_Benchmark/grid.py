@@ -293,6 +293,10 @@ def get_T_supply():
         else:
             T_supply[i] = 95
    
+    
+    plt.plot(range(8760), T_supply)
+    plt.show()
+    
     return T_supply
 
   
