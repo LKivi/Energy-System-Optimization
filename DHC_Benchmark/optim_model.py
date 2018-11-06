@@ -172,9 +172,9 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
             model.addConstr(heat[device][t] <= devs["HP"]["dT_cond"]/(param["T_heating_supply"][t] - param["T_heating_return"]) * dem["heat"][t])      # maximum HP heating
             model.addConstr(cool[device][t] <= devs["HP"]["dT_evap"]/(param["T_cooling_return"] - param["T_cooling_supply"]) * dem["cool"][t])         # maximum HP cooling
             
-        # limitation of power from grid       
-        for device in ["from_grid"]:
-            model.addConstr(power[device][t] <= grid_limit_el)   
+        # limitation of power from and to grid       
+        for device in ["from_grid", "to_grid"]:
+            model.addConstr(power[device][t] <= grid_limit_el)
             
         model.addConstr(sum(gas[device][t] for device in ["BOI", "CHP"]) <= grid_limit_gas)
         
@@ -259,6 +259,9 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
     c_om = {}
     for device in all_devs:       
         c_om[device] = devs[device]["cost_om"] * inv[device]
+        
+    # Total generated electrial energy
+    generation_total = sum(power["CHP"][t] for t in time_steps)
     
 
     #%% OBJECTIVE FUNCTIONS
@@ -266,6 +269,7 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
     model.addConstr(obj["tac"] == sum(c_inv[dev] for dev in all_devs) + sum(c_om[dev] for dev in all_devs) + param["tac_pipes"]                         
                                   + gas_total * param["price_gas"] + grid_limit_gas * param["price_cap_gas"]
                                   + from_grid_total * param["price_el"] + grid_limit_el * param["price_cap_el"]
+                                  + (generation_total - to_grid_total) * 0.4 * param["EEG_levy"]    # 40 % of EEG levy on on-site consume of generated power
                                   - to_grid_total * param["revenue_feed_in"], "sum_up_TAC")
     
     # ANNUAL CO2 EMISSIONS: Implicit emissions by power supply from national grid is penalized, feed-in is ignored

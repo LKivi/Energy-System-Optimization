@@ -90,6 +90,8 @@ def calculateLosses(param, data):
 
 #%%
 # Calculate and return time series of soil temperature in grid depth
+# Model by M. Badache (2015): A new modeling approach for improved ground temperature profile determination
+# http://dx.doi.org/10.1016/j.renene.2015.06.020
 def calculateSoilTemperature(param): 
     
     

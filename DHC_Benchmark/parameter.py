@@ -29,6 +29,7 @@ def load_params():
              "price_cap_gas": 12.149,       # kEUR/(MW*a)   capacity charge for gas grid usage
              "price_el": 0.1504,            # kEUR/MWh,     electricity price
              "price_cap_el": 38.83,         # kEUR/(MW*a)   capacity charge for electricity grid usage
+             "EEG_levy": 0.06792,           # kEUR/MWh      levy per kWh of used electrical energy charged to support renewable energy technologies
              "revenue_feed_in": 0.055,      # kEUR/MWh,     feed-in tariff (electricity)
              "gas_CO2_emission": 0.2,       # t_CO2/MWh,    specific CO2 emissions (natural gas)
              "grid_CO2_emission": 0.503,    # t_CO2/MWh,    specific CO2 emissions (grid)
@@ -149,8 +150,8 @@ def load_params():
     #%% BOILER
     devs["BOI"] = {
                    "eta_th": 0.9,       # ---,    thermal efficiency
-                   "life_time": 30,     # a,      operation time
-                   "cost_om": 0.03,     # ---,    annual operation and maintenance costs as share of investment
+                   "life_time": 20,     # a,      operation time (VDI 2067)
+                   "cost_om": 0.03,     # ---,    annual operation and maintenance costs as share of investment (VDI 2067)
                    }
     
     
@@ -169,8 +170,8 @@ def load_params():
     devs["CHP"] = {
                    "eta_el": 0.419,     # ---,            electrical efficiency
                    "eta_th": 0.448,     # ---,           thermal efficiency
-                   "life_time": 30,     # a,               operation time
-                   "cost_om": 0.05,     # ---,             annual operation and maintenance costs as share of investment
+                   "life_time": 15,     # a,               operation time (VDI 2067)
+                   "cost_om": 0.08,     # ---,             annual operation and maintenance costs as share of investment (VDI 2067)
                    }   
     
     devs["CHP"]["cap_i"] =  {  0: 0,        # MW_el
@@ -190,10 +191,10 @@ def load_params():
     devs["HP"] = {
                   "switch_hp": 1,        #---,   0: system without heat pump, 1:system with heat pump
                   "dT_pinch": 5,         # K,    temperature difference between heat exchanger sides at pinch point
-                  "life_time": 20,       # a,    operation time
-                  "cost_om": 0.04,       #---,   annual operation and maintenance as share of investment
+                  "life_time": 20,       # a,    operation time (VDI 2067)
+                  "cost_om": 0.025,      #---,   annual operation and maintenance as share of investment (VDI 2067)
                   "dT_evap": 6,          # K,    temperature difference of water in evaporator
-                  "dT_cond": 20           # K,    temperature difference of water in condensator
+                  "dT_cond": 20          # K,    temperature difference of water in condensator
                   }
     
     devs["HP"]["COP"] = calc_COP(devs, param)
@@ -214,8 +215,8 @@ def load_params():
     #%% ABSORPTION CHILLER
     devs["AC"] = {
                   "eta_th": 0.68,       # ---,        nominal thermal efficiency (cooling power / heating power)
-                  "life_time": 20,      # a,          operation time
-                  "cost_om": 0.03,      # ---,        annual operation and maintenance costs as share of investment
+                  "life_time": 18,      # a,          operation time (VDI 2067)
+                  "cost_om": 0.03,      # ---,        annual operation and maintenance costs as share of investment (VDI 2067)
                   }
     
     devs["AC"]["cap_i"] =   {  0: 0,        # MW_th
@@ -232,9 +233,9 @@ def load_params():
 
     #%% COMPRESSION CHILLER
     devs["CC"] = {
-                  "COP": 5,             # ---,              nominal coefficient of performance
-                  "life_time": 20,      # a,                operation time
-                  "cost_om": 0.04,      # ---,              annual operation and maintenance costs as share of investment
+                  "COP": 5,             # ---,             nominal coefficient of performance
+                  "life_time": 15,      # a,               operation time (VDI 2067)
+                  "cost_om": 0.035,     # ---,             annual operation and maintenance costs as share of investment (VDI 2067)
                   }
     
     
@@ -456,7 +457,7 @@ def calc_COP(devs, param):
     t_h = 273.15 + param["T_heating_return"] + devs["HP"]["dT_cond"] + devs["HP"]["dT_pinch"]
     t_c = 273.15 + param["T_cooling_return"] - devs["HP"]["dT_evap"] - devs["HP"]["dT_pinch"]
     
-    COP = 0.4 * t_h / (t_h - t_c)
+    COP = 0.6 * t_h / (t_h - t_c)
     
     return COP
     

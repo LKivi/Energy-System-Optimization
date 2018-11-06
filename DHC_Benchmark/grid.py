@@ -295,7 +295,7 @@ def get_T_supply():
    
     
     plt.plot(range(8760), T_supply)
-    plt.show()
+#    plt.show()
     
     return T_supply
 
