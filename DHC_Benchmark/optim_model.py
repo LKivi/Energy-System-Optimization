@@ -29,7 +29,7 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
     time_steps = range(8760)
 
     # Create set for devices
-    all_devs = ["BOI", "CHP", "AC", "CC", "HP"]       
+    all_devs = ["BOI", "CHP", "AC", "CC", "HP", "TES"]       
          
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     # Setting up the model
@@ -41,20 +41,20 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
     # Create new variables
 
     # Purchase decision binary variables (1 if device is installed, 0 otherwise)
-#    x = {}
-#    for device in all_devs:
-#        x[device] = model.addVar(vtype="B", name="x_" + str(device))
+    x = {}
+    for device in ["TES"]:
+        x[device] = model.addVar(vtype="B", name="x_" + str(device))
     
     # Piece-wise linear function variables
     lin = {}
-    for device in ["BOI", "CHP", "AC", "CC", "HP"]:   
+    for device in ["BOI", "CHP", "AC", "CC", "HP", "TES"]:   
         lin[device] = {}
         for i in range(len(devs[device]["cap_i"])):
             lin[device][i] = model.addVar(vtype="C", name="lin_" + device + "_i" + str(i))
             
     # Device's capacity (i.e. nominal power)
     cap = {}
-    for device in ["BOI", "CHP", "AC", "CC", "HP"]:
+    for device in ["BOI", "CHP", "AC", "CC", "HP", "TES"]:
         cap[device] = model.addVar(vtype="C", name="nominal_capacity_" + str(device))
     
     # Gas flow to/from devices
@@ -84,8 +84,23 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
         cool[device] = {}
         for t in time_steps:
             cool[device][t] = model.addVar(vtype="C", name="cool_" + device + "_t" + str(t))
+            
+    # storage variables
+    ch = {}  # Energy flow to charge storage device
+    dch = {} # Energy flow to discharge storage device
+    soc = {} # State of charge   
+    
+    for device in ["TES"]:
+        ch[device] = {}
+        dch[device] = {}
+        soc[device] = {}
+        for t in time_steps:
+            ch[device][t] = model.addVar(vtype="C", name="ch_" + device + "_t" + str(t))
+            dch[device][t] = model.addVar(vtype="C", name="dch_" + device + "_t" + str(t))
+            soc[device][t] = model.addVar(vtype="C", name="soc_" + device + "_t" + str(t))
+        soc[device][len(time_steps)] = model.addVar(vtype="C", name="soc_" + device + "_t" + str(len(time_steps)))
   
-    # grid transmission power
+    # grid maximum transmission power
     grid_limit_el = model.addVar(vtype = "C", name="grid_limit_el")  
     grid_limit_gas = model.addVar(vtype = "C", name="grid_limit_gas")
     
@@ -94,21 +109,8 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
     gas_total = model.addVar(vtype = "C", name="gas_total") 
     
     
-    # Storage decision variables
-#    ch = {}  # Energy flow to charge storage device
-#    dch = {} # Energy flow to discharge storage device
-#    soc = {} # State of charge
-#    
-#    for device in ["TES"]:
-#        ch[device] = {}
-#        dch[device] = {}
-#        soc[device] = {}
-#        for t in time_steps:
-#            ch[device][t] = model.addVar(vtype="C", name="ch_" + device + "_t" + str(t))
-#            dch[device][t] = model.addVar(vtype="C", name="dch_" + device + "_t" + str(t))
-#            soc[device][t] = model.addVar(vtype="C", name="soc_" + device + "_t" + str(t))
-#        soc[device][len(time_steps)] = model.addVar(vtype="C", name="soc_" + device + "_t" + str(len(time_steps)))
-        
+    
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     # Objective functions
     obj = {}
     set_obj = ["tac", "co2_gross", "power_from_grid", "net_power_from_grid"] # Mögliche Zielgrößen
@@ -136,7 +138,7 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
     #%% DEVICE CAPACITIES
    
     # calculate from piece-wise linear function variables    
-    for device in ["BOI", "CHP", "AC", "CC", "HP"]:
+    for device in ["BOI", "CHP", "AC", "CC", "HP", "TES"]:
     
         model.addConstr(cap[device] == sum(lin[device][i] * devs[device]["cap_i"][i] for i in range(len(devs[device]["cap_i"]))))
         # lin: Special Ordered Sets of type 2 (SOS2 or S2): an ordered set of non-negative variables, of which at most two can be non-zero, and if 
@@ -148,15 +150,23 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
         
       
     #%% CONTINUOUS SIZING OF DEVICES: minimum capacity <= capacity <= maximum capacity
-#    for device in ["TES"]:
-#        model.addConstr(cap[device] <= x[device] * devs[device]["max_cap"])
-#        model.addConstr(cap[device] >= x[device] * devs[device]["min_cap"])
+    
+    for device in ["TES"]:
+        model.addConstr(cap[device] <= x[device] * devs[device]["max_cap"])
+        model.addConstr(cap[device] >= x[device] * devs[device]["min_cap"])
     
     # if heat pump is not considered
     if devs["HP"]["switch_hp"] == 0:
         model.addConstr(cap["HP"] == 0)
+        
+    # if storage is not considered
+    if devs["TES"]["switch_TES"] == 0:
+        model.addConstr(x["TES"] == 0)      
+        for t in time_steps:
+            model.addConstr(ch["TES"][t] == 0)
+            model.addConstr(dch["TES"][t] == 0)
     
-    #%% DEVICE LOAD CONTRAINTS: minimal load < load < capacity
+    #%% LOAD CONTRAINTS: minimal load < load < capacity
     
     for t in time_steps:
         for device in ["BOI", "HP"]:
@@ -203,10 +213,10 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
         
 
 
-    #%% ENERGY BALANCES
+    #%% GLOBAL ENERGY BALANCES
     for t in time_steps:
         # Heat balance
-        model.addConstr(heat["BOI"][t] + heat["CHP"][t] + heat["HP"][t] == dem["heat"][t] + heat["AC"][t])
+        model.addConstr(heat["BOI"][t] + heat["CHP"][t] + heat["HP"][t] + dch["TES"][t] == dem["heat"][t] + heat["AC"][t] + ch["TES"][t])
 
     for t in time_steps:
         # Electricity balance
@@ -215,29 +225,31 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
     for t in time_steps:
         # Cooling balance
         model.addConstr(cool["AC"][t] + cool["CC"][t] + cool["HP"][t] == dem["cool"][t])    
+        
     
     #%% STORAGE DEVICES
-#    for device in ["TES"]:  
-#        # Cyclic condition
-#        model.addConstr(soc[device][len(time_steps)] == soc[device][0])
-#
-#        for t in range(len(time_steps)+1):
-#            if t == 0:
-#                # Set initial state of charge
-#                model.addConstr(soc[device][0] <= cap[device] * devs[device]["soc_init"])
-#            else:
-#                # Energy balance: soc(t) = soc(t-1) + charge - discharge
-#                model.addConstr(soc[device][t] == soc[device][t-1] * (1-devs[device]["sto_loss"])
-#                    + (ch[device][t-1] * devs[device]["eta_ch"] 
-#                    - dch[device][t-1] / devs[device]["eta_dch"]))
-#                
-#                # soc_min <= state of charge <= soc_max
-#                model.addConstr(soc[device][t] <= devs[device]["soc_max"] * cap[device])
-#                model.addConstr(soc[device][t] >= devs[device]["soc_min"] * cap[device])
-#                
-#                # charging power <= maximum charging power and discharging power <= maximum discharging power 
-#                model.addConstr(ch[device][t-1] <= devs[device]["max_ch"])
-#                model.addConstr(dch[device][t-1] <= devs[device]["max_dch"])
+    for device in ["TES"]:  
+        # Cyclic condition
+        model.addConstr(soc[device][len(time_steps)] == soc[device][0])     
+
+        for t in range(len(time_steps)+1):
+                    
+            if t == 0:
+                # Set initial state of charge
+                model.addConstr(soc[device][0] <= cap[device] * devs[device]["soc_init"])
+            else:
+                # Energy balance: soc(t) = soc(t-1) + charge - discharge
+                model.addConstr(soc[device][t] == soc[device][t-1] * (1-devs[device]["sto_loss"])
+                    + (ch[device][t-1] * devs[device]["eta_ch"] 
+                    - dch[device][t-1] / devs[device]["eta_dch"]))
+                
+                # soc_min <= state of charge <= soc_max
+                model.addConstr(soc[device][t] <= devs[device]["soc_max"] * cap[device])
+                model.addConstr(soc[device][t] >= devs[device]["soc_min"] * cap[device])
+                
+                # charging power <= maximum charging power and discharging power <= maximum discharging power 
+                model.addConstr(ch[device][t-1] <= devs[device]["max_ch"])
+                model.addConstr(dch[device][t-1] <= devs[device]["max_dch"])
 
     #%% SUM UP RESULTS
     model.addConstr(gas_total == sum(sum(gas[device][t] for t in time_steps) for device in ["BOI", "CHP"]))
@@ -266,11 +278,11 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
 
     #%% OBJECTIVE FUNCTIONS
     # TOTAL ANNUALIZED COSTS
-    model.addConstr(obj["tac"] == sum(c_inv[dev] for dev in all_devs) + sum(c_om[dev] for dev in all_devs) + param["tac_pipes"]                         
-                                  + gas_total * param["price_gas"] + grid_limit_gas * param["price_cap_gas"]
-                                  + from_grid_total * param["price_el"] + grid_limit_el * param["price_cap_el"]
-                                  + (generation_total - to_grid_total) * 0.4 * param["EEG_levy"]    # 40 % of EEG levy on on-site consume of generated power
-                                  - to_grid_total * param["revenue_feed_in"], "sum_up_TAC")
+    model.addConstr(obj["tac"] == sum(c_inv[dev] for dev in all_devs) + sum(c_om[dev] for dev in all_devs) + param["tac_pipes"]     # annualized investment costs              
+                                  + gas_total * param["price_gas"] + grid_limit_gas * param["price_cap_gas"]                        # gas costs
+                                  + from_grid_total * param["price_el"] + grid_limit_el * param["price_cap_el"]                     # electricity costs
+                                  + (generation_total - to_grid_total) * 0.4 * param["EEG_levy"]                                    # 40 % of EEG levy on on-site consume of generated power
+                                  - to_grid_total * param["revenue_feed_in"], "sum_up_TAC")                                         # revenue for grid feed-in
     
     # ANNUAL CO2 EMISSIONS: Implicit emissions by power supply from national grid is penalized, feed-in is ignored
     model.addConstr(obj["co2_gross"] == gas_total * param["gas_CO2_emission"] + from_grid_total * param["grid_CO2_emission"], "sum_up_gross_CO2_emissions")

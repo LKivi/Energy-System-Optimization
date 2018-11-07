@@ -27,8 +27,8 @@ def load_params():
              "observation_time": 20.0,      # a,            project lifetime
              "price_gas": 0.03524,          # kEUR/MWh,     natural gas price
              "price_cap_gas": 12.149,       # kEUR/(MW*a)   capacity charge for gas grid usage
-             "price_el": 0.1504,            # kEUR/MWh,     electricity price
-             "price_cap_el": 38.83,         # kEUR/(MW*a)   capacity charge for electricity grid usage
+             "price_el": 0.15545,            # kEUR/MWh,    electricity price
+             "price_cap_el": 39.068,        # kEUR/(MW*a)   capacity charge for electricity grid usage
              "EEG_levy": 0.06792,           # kEUR/MWh      levy per kWh of used electrical energy charged to support renewable energy technologies
              "revenue_feed_in": 0.055,      # kEUR/MWh,     feed-in tariff (electricity)
              "gas_CO2_emission": 0.2,       # t_CO2/MWh,    specific CO2 emissions (natural gas)
@@ -189,7 +189,7 @@ def load_params():
 
     #%% WATER SOURCE HEAT PUMP
     devs["HP"] = {
-                  "switch_hp": 1,        #---,   0: system without heat pump, 1:system with heat pump
+                  "switch_hp": 0,        #---,   0: system without heat pump, 1:system with heat pump
                   "dT_pinch": 5,         # K,    temperature difference between heat exchanger sides at pinch point
                   "life_time": 20,       # a,    operation time (VDI 2067)
                   "cost_om": 0.025,      #---,   annual operation and maintenance as share of investment (VDI 2067)
@@ -249,6 +249,37 @@ def load_params():
                             1: 94.95,     # kEUR
                             2: 402.4      # kEUR
                             } 
+    
+    
+    #%% (HEAT) THERMAL ENERGY STORAGE
+    devs["TES"] = {
+                   "switch_TES": 0,     # toggle availability of thermal storage
+                   "max_cap": 250,       # MWh_th,           maximum thermal storage capacity
+                   "min_cap": 0,        # MWh_th,           minimum thermal storage capacity              
+                   "sto_loss": 0.005,   # 1/h,              standby losses over one time step
+                   "eta_ch": 0.975,     # ---,              charging efficiency
+                   "eta_dch": 0.975,    # ---,              discharging efficiency
+                   "max_ch": 1000,      # MW,               maximum charging power
+                   "max_dch": 1000,     # MW,               maximum discharging power
+                   "soc_init": 0.8,     # ---,              maximum initial state of charge
+                   "soc_max": 1,        # ---,              maximum state of charge
+                   "soc_min": 0,        # ---,              minimum state of charge
+                   "life_time": 20,     # a,                operation time (VDI 2067 Trinkwasserspeicher)
+                   "cost_om": 0.02,     # ---,              annual operation and maintenance costs as share of investment (VDI 2067 Trinkwasserspeicher)
+
+                   }
+    
+    devs["TES"]["cap_i"] =   { 0: 0,         # MWh_th,      depends on temperature difference! Q = V * c_p * rho * dT
+                               1: 8.128,     # MWh_th
+                               2: 40.639,    # MWh_th
+                               3: 243.833    # MWh_th
+                               }
+    
+    devs["TES"]["inv_i"] = {    0: 0,              # kEUR
+                                1: 147.2,          # kEUR,    includes factor of 1.15 for pressure correction factor due to high temperatures; higher pressure is needed to prevent evaporation
+                                2: 410.55,         # kEUR
+                                3: 1083.3          # kEUR
+                                } 
     
  #%%   
     # Calculate annuity factor of every device and annualized costs of pipes

@@ -90,7 +90,7 @@ def run_post_processing(dir_results):
                  "power_from_grid", "power_to_grid",
 #                 "power_WT", "power_PV", "heat_STC", 
                  "cool_AC", "heat_AC", "cool_CC", "power_CC", 
-#                "ch_TES", "dch_TES", "soc_TES", #"ch_CTES", "dch_CTES", "soc_CTES", "ch_BAT", "dch_BAT", "soc_BAT", 
+                 "ch_TES", "dch_TES", "soc_TES", #"ch_CTES", "dch_CTES", "soc_CTES", "ch_BAT", "dch_BAT", "soc_BAT", 
                  ]
     
     demand_list = ["heat", "cool", "power"]
@@ -110,7 +110,7 @@ def run_post_processing(dir_results):
             # Create plots
             print("Create plots...")
             start_time = time.time()
-            post_processing_plot.plot_time_series(time_series, {"yearly": 1, "monthly": 0, "daily": 0}, dir_results + "\\" + folder)
+            post_processing_plot.plot_time_series(time_series, {"yearly": 0, "monthly": 0, "daily": 1}, dir_results + "\\" + folder)
             print("All plots created (%f seconds)." %(time.time() - start_time))
             
         if "anchor" in folder:
@@ -131,11 +131,6 @@ def run_post_processing(dir_results):
             
         else:
             continue
-    
-    # TODO:    
-    # Create pareto plots
-    # Create "run_single_objective.py"
-    # Implement curtailed energy in time series plots: time_series["max_heat_STC"] = params["STC"]["heat"]
             
 
 #%%
