@@ -536,20 +536,20 @@ def plot_interval_storage(M, save_name, xTitle):
     plt.tight_layout(h_pad=6)
     
     # Create subplot: CTES
-    plt.subplot(312, ylabel = 'State of charge in MWh', xlabel = " ")
-#    plt.plot(timeTicks, sto_res["soc_CTES"], color=tech_color["soc_CTES"], linewidth=3, label="Cold thermal energy storage")
-    plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=5, mode="expand", borderaxespad=0.)
-    plt.xticks(np.arange(min(timeTicks), max(timeTicks)+1, 1))
-    plt.xlim(min(timeTicks), max(timeTicks))
-    plt.tight_layout(h_pad=6)
+#    plt.subplot(312, ylabel = 'State of charge in MWh', xlabel = " ")
+##    plt.plot(timeTicks, sto_res["soc_CTES"], color=tech_color["soc_CTES"], linewidth=3, label="Cold thermal energy storage")
+#    plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=5, mode="expand", borderaxespad=0.)
+#    plt.xticks(np.arange(min(timeTicks), max(timeTicks)+1, 1))
+#    plt.xlim(min(timeTicks), max(timeTicks))
+#    plt.tight_layout(h_pad=6)
     
     # Create subplot: BAT
-    plt.subplot(313, ylabel = 'State of charge in MWh', xlabel = xTitle)
-#    plt.plot(timeTicks, sto_res["soc_BAT"], color=tech_color["soc_BAT"], linewidth=3, label="Battery")
-    plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=5, mode="expand", borderaxespad=0.)
-    plt.xticks(np.arange(min(timeTicks), max(timeTicks)+1, 1))
-    plt.xlim(min(timeTicks), max(timeTicks))
-    plt.tight_layout(h_pad=6)
+#    plt.subplot(313, ylabel = 'State of charge in MWh', xlabel = xTitle)
+##    plt.plot(timeTicks, sto_res["soc_BAT"], color=tech_color["soc_BAT"], linewidth=3, label="Battery")
+#    plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=5, mode="expand", borderaxespad=0.)
+#    plt.xticks(np.arange(min(timeTicks), max(timeTicks)+1, 1))
+#    plt.xlim(min(timeTicks), max(timeTicks))
+#    plt.tight_layout(h_pad=6)
 
     plt.savefig(fname = save_name +".png", dpi = 200, format = "png", bbox_inches="tight", pad_inches=0.1) #transparent = True,
 #    plt.savefig(fname = save_name + ".pdf", dpi = 200, format = "pdf", bbox_inches="tight", pad_inches=0.1)

@@ -110,7 +110,7 @@ def run_post_processing(dir_results):
             # Create plots
             print("Create plots...")
             start_time = time.time()
-            post_processing_plot.plot_time_series(time_series, {"yearly": 0, "monthly": 0, "daily": 1}, dir_results + "\\" + folder)
+            post_processing_plot.plot_time_series(time_series, {"yearly": 1, "monthly": 0, "daily": 0}, dir_results + "\\" + folder)
             print("All plots created (%f seconds)." %(time.time() - start_time))
             
         if "anchor" in folder:

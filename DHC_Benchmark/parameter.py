@@ -25,12 +25,12 @@ def load_params():
     #%% GENERAL PARAMETERS
     param = {"interest_rate":  0.05,        # ---,          interest rate
              "observation_time": 20.0,      # a,            project lifetime
-             "price_gas": 0.03524,          # kEUR/MWh,     natural gas price
+             "price_gas": 0.02824,          # kEUR/MWh,     natural gas price
              "price_cap_gas": 12.149,       # kEUR/(MW*a)   capacity charge for gas grid usage
-             "price_el": 0.15545,            # kEUR/MWh,    electricity price
-             "price_cap_el": 39.068,        # kEUR/(MW*a)   capacity charge for electricity grid usage
-             "EEG_levy": 0.06792,           # kEUR/MWh      levy per kWh of used electrical energy charged to support renewable energy technologies
-             "revenue_feed_in": 0.055,      # kEUR/MWh,     feed-in tariff (electricity)
+             "price_el": 0.14506,           # kEUR/MWh,     electricity price
+             "price_cap_el": 59.660,        # kEUR/(MW*a)   capacity charge for electricity grid usage
+             "self_charge": 0.0272,         # kEUR/MWh      charge on on-site consumption of CHP-generated power   
+             "revenue_feed_in": 0.05931,    # kEUR/MWh,      feed-in revenue for CHP-gernerated power
              "gas_CO2_emission": 0.2,       # t_CO2/MWh,    specific CO2 emissions (natural gas)
              "grid_CO2_emission": 0.503,    # t_CO2/MWh,    specific CO2 emissions (grid)
 #             "pv_stc_area": 10000,         # m2,           roof area for pv or stc
@@ -74,10 +74,10 @@ def load_params():
     param.update(param_pipe)  
                 
     param_pipe_eco = {"inv_ground": 300,                 # EUR/m,    preparation costs for pipe installment
-                       "inv_pipe_isolated": 600,          # EUR/m,    diameter price for isolated pipes
-                       "inv_pipe_PE": 300,                # EUR/m,    diameter price for PE pipe without insulation
-                       "pipe_lifetime": 50,               # a,        pipe life time
-                       "cost_om_pipe": 0.01                  #---,        pipe operation and maintetance costs
+                       "inv_pipe_isolated": 600,         # EUR/m,    diameter price for isolated pipes
+                       "inv_pipe_PE": 300,               # EUR/m,    diameter price for PE pipe without insulation
+                       "pipe_lifetime": 50,              # a,        pipe life time
+                       "cost_om_pipe": 0.01              #---,        pipe operation and maintetance costs
                        }
                 
     
@@ -155,7 +155,6 @@ def load_params():
                    }
     
     
-    # KOSTEN NOCHMAL ÜBERARBEITEN!!
     devs["BOI"]["cap_i"] =  {  0: 0,        # MW_th 
                                1: 0.5,      # MW_th
                                2: 5         # MW_th
@@ -254,7 +253,7 @@ def load_params():
     #%% (HEAT) THERMAL ENERGY STORAGE
     devs["TES"] = {
                    "switch_TES": 0,     # toggle availability of thermal storage
-                   "max_cap": 250,       # MWh_th,           maximum thermal storage capacity
+                   "max_cap": 250,       # MWh_th,          maximum thermal storage capacity
                    "min_cap": 0,        # MWh_th,           minimum thermal storage capacity              
                    "sto_loss": 0.005,   # 1/h,              standby losses over one time step
                    "eta_ch": 0.975,     # ---,              charging efficiency
@@ -462,6 +461,8 @@ def calc_annual_investment(devs, param, grid_data):
             devs[device]["ann_factor"] = ( 1 + invest_replacements - res_value) * CRF 
             
       
+    
+    # HIER NOCH KOSTEN FÜR PUMPE (Investition + Strom) UND FÜR ÜBERGABESTATIONEN ERGÄNZEN
     # Pipe costs
     length = 0
     inv_pipes = 0

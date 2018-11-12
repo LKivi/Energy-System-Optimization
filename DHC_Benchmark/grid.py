@@ -19,7 +19,7 @@ def design_grid(param):
     path_heating = "input_data/pipes_heating.txt"
     path_cooling = "input_data/pipes_cooling.txt"
     param["diameters"]["heating"] = np.loadtxt(open(path_heating, "rb"), delimiter = ",", usecols=(0))
-    param["diameters"]["cooling"] = np.loadtxt(open(path_cooling, "rb"), delimiter = ",", usecols=(0))
+    param["diameters"]["cooling"] = np.loadtxt(open(path_cooling, "rb"), delimiter = ",", usecols=(0)) - np.loadtxt(open(path_cooling, "rb"), delimiter = ",", usecols=(1))
     
     data = generateJson()
     dem = load_demands(data)
@@ -267,11 +267,6 @@ def load_demands(data):
     
     return dem
         
-    
-
-#
-
-
 
 #%%
 def get_T_supply():

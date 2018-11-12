@@ -103,6 +103,7 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
     # grid maximum transmission power
     grid_limit_el = model.addVar(vtype = "C", name="grid_limit_el")  
     grid_limit_gas = model.addVar(vtype = "C", name="grid_limit_gas")
+  #  to_grid_max = model.addVar(vtype = "C", name="to_grid_max")
     
     # total energy amounts taken from grid
     from_grid_total = model.addVar(vtype = "C", name="from_grid_total") 
@@ -182,11 +183,18 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
             model.addConstr(heat[device][t] <= devs["HP"]["dT_cond"]/(param["T_heating_supply"][t] - param["T_heating_return"]) * dem["heat"][t])      # maximum HP heating
             model.addConstr(cool[device][t] <= devs["HP"]["dT_evap"]/(param["T_cooling_return"] - param["T_cooling_supply"]) * dem["cool"][t])         # maximum HP cooling
             
-        # limitation of power from and to grid       
+        # limitation of power from and to grid   
+        model.addConstr(sum(gas[device][t] for device in ["BOI", "CHP"]) <= grid_limit_gas)
+        
         for device in ["from_grid", "to_grid"]:
             model.addConstr(power[device][t] <= grid_limit_el)
+        
+#       for device in ["to_grid"]:
+#            model.addConstr(power[device][t] <= to_grid_max)
             
-        model.addConstr(sum(gas[device][t] for device in ["BOI", "CHP"]) <= grid_limit_gas)
+#    model.addConstr(to_grid_max <= grid_limit_el)
+            
+
         
             
 
@@ -281,8 +289,9 @@ def run_optim(obj_fn, obj_eps, eps_constr, dir_results):
     model.addConstr(obj["tac"] == sum(c_inv[dev] for dev in all_devs) + sum(c_om[dev] for dev in all_devs) + param["tac_pipes"]     # annualized investment costs              
                                   + gas_total * param["price_gas"] + grid_limit_gas * param["price_cap_gas"]                        # gas costs
                                   + from_grid_total * param["price_el"] + grid_limit_el * param["price_cap_el"]                     # electricity costs
-                                  + (generation_total - to_grid_total) * 0.4 * param["EEG_levy"]                                    # 40 % of EEG levy on on-site consume of generated power
-                                  - to_grid_total * param["revenue_feed_in"], "sum_up_TAC")                                         # revenue for grid feed-in
+                           #       + (generation_total - to_grid_total) * param["self_charge"]                                       # charge on on-site consumption of CHP-generated power
+                                  - to_grid_total * param["revenue_feed_in"] #- to_grid_max * param["revenue_cap"]
+                                  , "sum_up_TAC")    # revenue for grid feed-in
     
     # ANNUAL CO2 EMISSIONS: Implicit emissions by power supply from national grid is penalized, feed-in is ignored
     model.addConstr(obj["co2_gross"] == gas_total * param["gas_CO2_emission"] + from_grid_total * param["grid_CO2_emission"], "sum_up_gross_CO2_emissions")
